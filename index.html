@@ -91,7 +91,7 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 #btnShop { background: linear-gradient(180deg, #ffd85c, #f0a91b); color: #3a2400; border-color: rgba(0,0,0,.1); grid-column: span 2; justify-content: center; font-size: 17px; }
 #btnShop kbd { color: #6b4700; border-color: rgba(0,0,0,.2); }
 
-#hint { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); padding: 8px 12px; font-size: 13px; color: var(--muted); max-width: 520px; line-height: 1.5; pointer-events: none; }
+#hint { position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(14px, env(safe-area-inset-bottom)); padding: 8px 12px; font-size: 13px; color: var(--muted); max-width: 620px; word-break: keep-all; line-height: 1.5; pointer-events: none; }
 #hint b { color: #fff; font-weight: normal; }
 
 #btnMine { position: absolute; right: max(18px, env(safe-area-inset-right)); bottom: max(18px, env(safe-area-inset-bottom)); width: 118px; height: 118px; border-radius: 50%; border: 4px solid rgba(255,255,255,.85); background: radial-gradient(circle at 40% 30%, #9ff3ff, #36b6ff 55%, #2a63d8); box-shadow: 0 8px 0 #1d3f99, 0 14px 30px rgba(10,30,90,.45); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,40,.35); transition: transform .06s, box-shadow .06s; touch-action: none; }
@@ -131,6 +131,14 @@ body.touch .ibtn kbd { display: none; }
 .floater.hurtTxt { color: #ff6b5b; font-size: 22px; }
 #btnAtk { position: absolute; right: max(22px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); width: 92px; height: 92px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); background: radial-gradient(circle at 40% 30%, #ffb3a8, #ff6b5b 60%, #c0392b); box-shadow: 0 6px 0 #8e2a20; font-size: 20px; color: #fff; text-shadow: 0 2px 0 rgba(60,0,0,.35); pointer-events: auto; touch-action: none; }
 #btnAtk.press { transform: translateY(5px); box-shadow: 0 1px 0 #8e2a20; }
+#btnSL { position: absolute; right: max(166px, calc(env(safe-area-inset-right) + 166px)); bottom: max(130px, calc(env(safe-area-inset-bottom) + 130px)); width: 62px; height: 62px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); background: rgba(16,22,44,.6); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; pointer-events: auto; touch-action: none; transition: transform .06s, background .15s; }
+#btnSL svg { width: 24px; height: 24px; }
+#btnSL small { font-size: 10px; line-height: 1; }
+#btnSL.on { background: radial-gradient(circle at 40% 30%, #9ff3ff, #36b6ff 60%, #2a63d8); }
+#btnSL.press { transform: scale(.93); }
+#xhair { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; pointer-events: none; display: none; }
+body.sl #xhair { display: block; }
+body.sl:not(.plock) #c { cursor: crosshair; }
 body.touch #hpBar { bottom: max(250px, calc(env(safe-area-inset-bottom) + 250px)); }
 #zoneBanner { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(.96); text-align: center; pointer-events: none; opacity: 0; transition: opacity .35s, transform .35s; padding: 14px 30px 16px; border-radius: 22px; background: rgba(16,22,44,.78); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(5,10,30,.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: calc(100vw - 32px); }
 #zoneBanner.show { transform: translate(-50%, -50%) scale(1); }
@@ -294,11 +302,12 @@ a.buy { display: inline-flex; align-items: center; justify-content: center; text
     </div>
   </div>
 
-  <div id="hint" class="panel"><b>WASD</b> 이동 · <b>Space</b> 점프 · <b>드래그</b> 시점 · <b>F</b>/크리스탈 클릭 채굴 · <b>클릭</b>/<b>J</b> 공격</div>
+  <div id="hint" class="panel"><b>WASD</b> 이동 · <b>Space</b> 점프 · <b>드래그</b> 시점 · <b>F</b>/크리스탈 클릭 채굴 · <b>클릭</b>/<b>J</b> 공격 · <b>Shift</b> 시프트락</div>
 
   <div id="hpBar" class="hidden"><span>HP</span><div class="hpTrack"><i id="hpFill"></i></div><b id="hpTxt">100 / 100</b></div>
   <div id="bossBar" class="panel hidden"><div class="bbHead"><span id="bossName">보스</span><b id="bossTime">180초</b></div><div class="bbTrack"><i id="bossHpFill"></i></div><div id="bossHpTxt"></div></div>
   <div id="hurt"></div>
+  <div id="xhair" aria-hidden="true"><svg viewBox="0 0 26 26"><path d="M13 2v6M13 18v6M2 13h6M18 13h6" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="4" stroke-linecap="round"/><path d="M13 2v6M13 18v6M2 13h6M18 13h6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="13" cy="13" r="2.2" fill="#fff" stroke="rgba(0,0,0,.55)" stroke-width="1"/></svg></div>
 
   <div id="zoneBanner"><div class="zb1" id="zb1"></div><div class="zb2" id="zb2"></div><div class="zb3" id="zb3"></div></div>
   <div id="goldArrow" class="hidden"><div id="goldPtr"></div><span id="goldTxt"></span></div>
@@ -309,6 +318,7 @@ a.buy { display: inline-flex; align-items: center; justify-content: center; text
     <div id="joyBase"><div id="joyKnob"></div></div>
     <button id="btnJump" aria-label="점프">점프</button>
     <button id="btnAtk" aria-label="공격">공격</button>
+    <button id="btnSL" aria-label="시프트락" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><small>시프트락</small></button>
   </div>
   <button id="btnMine" aria-label="채굴하기"><span class="gem"></span><b>채굴</b><small id="mineVal">+1</small></button>
 </div>
@@ -838,7 +848,7 @@ function defaultState() {
     combat: { owned: ['stick'], equip: 'stick', mastery: 0, vital: 0, kills: 0, bossKills: 0 }, raid: {},
     skin: { shirt: 'blue', hat: 'cap', trail: 'none', owned: ['blue', 'cap', 'none'] },
     stars: [], quest: 0, clicks: 0, deaths: 0, play: 0,
-    t: Date.now(), created: Date.now(), welcomed: false, seenV2: true, seenV3: true,
+    t: Date.now(), created: Date.now(), welcomed: false, seenV2: true, seenV3: true, seenV4: true,
     mute: false, sens: 1,
   };
 }
@@ -2026,7 +2036,10 @@ scene.add(shadowBlob);
 // ---------- 입력 ----------
 const keys = new Set();
 const joy = { id: null, x: 0, y: 0, ox: 0, oy: 0, active: false };
-const cam = { yaw: 0, pitch: 0.42, dist: 11, distT: 11, cur: 11, shake: 0 };
+const cam = { yaw: 0, pitch: 0.42, dist: 11, distT: 11, cur: 11, shake: 0, sl: 0 };
+// 시프트락: 캐릭터가 늘 카메라 방향을 보고, 카메라는 오른쪽 어깨 뒤로 비켜나요. PC에선 마우스 커서를 화면에 고정해요
+let shiftLock = false, plSelfExit = false, plSkip = 0;
+const SL_OFFSET = 1.3, SL_AIM_COS = Math.cos(55 * Math.PI / 180);
 let gameTime = 0;
 
 function inSkyZone(x, y, z) { return y > 60 && x > 55 && x < 140 && z < -50 && z > -340; }
@@ -2151,6 +2164,7 @@ function updatePlayer(h) {
   P.vx += (wx * spd - P.vx) * k;
   P.vz += (wz * spd - P.vz) * k;
   if ((ix || iy) && !L) P.face = Math.atan2(-wx, -wz);
+  if (shiftLock && !L) P.face = cam.yaw;
 
   // 점프
   P.coyote = P.grounded ? 0.11 : P.coyote - h;
@@ -2321,24 +2335,33 @@ function rayDist(ox, oy, oz, dx, dy, dz, maxT) {
   return best;
 }
 const camTarget = new THREE.Vector3(P.x, P.y + 1.4, P.z);
+const camLook = new THREE.Vector3();
 function updateCamera(dt) {
   const want = cam.distT * (P.launch ? 1.6 : 1);
   cam.dist = lerp(cam.dist, want, 1 - Math.exp(-6 * dt));
   camTarget.x = lerp(camTarget.x, P.x, 1 - Math.exp(-18 * dt));
   camTarget.z = lerp(camTarget.z, P.z, 1 - Math.exp(-18 * dt));
   camTarget.y = lerp(camTarget.y, P.y + 1.4, 1 - Math.exp(-(P.launch ? 20 : 10) * dt));
+  // 시프트락: 바라보는 점을 오른쪽 어깨 쪽으로 옮겨요. 오른쪽이 벽이면 그만큼 덜 옮겨요
+  cam.sl += ((shiftLock && !P.launch ? 1 : 0) - cam.sl) * (1 - Math.exp(-10 * dt));
+  camLook.copy(camTarget);
+  if (cam.sl > 0.002) {
+    const rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw), want = SL_OFFSET * cam.sl;
+    const off = Math.max(0, Math.min(want, rayDist(camTarget.x, camTarget.y, camTarget.z, rx, 0, rz, want + 0.35) - 0.35));
+    camLook.x += rx * off; camLook.z += rz * off;
+  }
   const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
   const dx = Math.sin(cam.yaw) * cp, dy = sp, dz = Math.cos(cam.yaw) * cp;
-  const hit = rayDist(camTarget.x, camTarget.y, camTarget.z, dx, dy, dz, cam.dist + 0.4);
+  const hit = rayDist(camLook.x, camLook.y, camLook.z, dx, dy, dz, cam.dist + 0.4);
   const d = Math.max(1.2, Math.min(cam.dist, hit - 0.4));
   cam.cur = d < cam.cur ? d : lerp(cam.cur, d, 1 - Math.exp(-4 * dt));
-  camera.position.set(camTarget.x + dx * cam.cur, camTarget.y + dy * cam.cur, camTarget.z + dz * cam.cur);
+  camera.position.set(camLook.x + dx * cam.cur, camLook.y + dy * cam.cur, camLook.z + dz * cam.cur);
   if (cam.shake > 0) {
     cam.shake -= dt;
     const s = cam.shake * 0.5;
     camera.position.x += rand(-s, s); camera.position.y += rand(-s, s); camera.position.z += rand(-s, s);
   }
-  camera.lookAt(camTarget);
+  camera.lookAt(camLook);
   sky.position.copy(camera.position);
   starField.position.copy(camera.position);
   sun.position.set(P.x + SUN_OFF.x, P.y + SUN_OFF.y, P.z + SUN_OFF.z);
@@ -2996,10 +3019,24 @@ function afterProgress() { checkQuest(); checkAch(); markDirty(); }
 
 // ---------- 저장 ----------
 let hadLocalSave = false;
+let localSavedT = 0; // 시작할 때 불러온 로컬 저장의 시각 (클라우드 저장과 비교용)
+let saveWarned = false;
 function serialize() { S.t = Date.now(); return JSON.stringify(S); }
 function save() {
-  try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) { /* 저장 불가 환경 */ }
+  try { localStorage.setItem(SAVE_KEY, serialize()); } catch (e) {
+    // 시크릿 모드·저장 공간 부족·저장이 막힌 iframe 등: 진행이 날아갈 수 있으니 한 번만 알려 줘요
+    if (!saveWarned && !cloud.ready) { saveWarned = true; toast('이 브라우저에선 자동 저장이 안 돼요. 상점 › 설정의 저장 코드를 복사해 두세요', 'bad', 7000); }
+  }
   cloudSave();
+}
+// localStorage엔 만료시간이 없어요. 다만 기기 저장 공간이 모자라면 브라우저가 지울 수 있어서
+// "이 사이트 데이터는 지우지 말아 달라"고 요청해 둬요. (거절되거나 미지원이어도 게임은 그대로 저장돼요)
+function requestPersist() {
+  try {
+    const st = navigator.storage;
+    if (!st || typeof st.persist !== 'function' || typeof st.persisted !== 'function') return;
+    st.persisted().then((ok) => { if (!ok) return st.persist(); }).catch(() => {});
+  } catch (e) { /* 미지원 */ }
 }
 function loadLocal() {
   try { const j = localStorage.getItem(SAVE_KEY); if (j) return JSON.parse(j); } catch (e) { /* 무시 */ }
@@ -3046,6 +3083,7 @@ function applyState(o) {
   S.mute = !!o.mute; S.welcomed = !!o.welcomed;
   S.seenV2 = !!o.seenV2;
   S.seenV3 = !!o.seenV3;
+  S.seenV4 = !!o.seenV4;
   if (v1) {
     // 1.0 저장 이전: 환생 토큰 → 환생 레벨/포인트, 기존 진행에 맞춰 보석 지급
     const tok = Math.floor(num(o.tokens, 0));
@@ -3129,11 +3167,12 @@ const TABS = [['gen', '생산'], ['upg', '강화'], ['war', '전투'], ['gem', '
 function openShop(tab) {
   if (tab) shopTab = tab;
   shopOpen = true;
+  syncPointerLock();
   $('shop').classList.remove('hidden');
   renderTabs();
   renderShop();
 }
-function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); canvas.focus(); }
+function closeShop() { shopOpen = false; $('shop').classList.add('hidden'); canvas.focus(); syncPointerLock(); }
 function renderTabs() {
   const nav = $('tabs');
   nav.innerHTML = '';
@@ -3378,6 +3417,11 @@ function renderShop() {
     const rg = c1.querySelector('#sensR');
     rg.value = S.sens;
     rg.oninput = () => { S.sens = +rg.value; };
+    const touchUI = document.body.classList.contains('touch');
+    c1.appendChild(el('p', '', touchUI ? '시프트락: 오른쪽 아래 자물쇠 버튼. 캐릭터가 화면 방향을 보고, 가운데 조준점 쪽 적을 노려요.' : '시프트락: Shift 키. 마우스가 화면에 고정돼 움직이기만 해도 시점이 돌아가고, 클릭하면 조준점 쪽으로 공격해요. Shift나 Esc로 풀어요.'));
+    const slb = el('button', 'buy alt wide', shiftLock ? '시프트락 끄기' : '시프트락 켜기');
+    slb.onclick = () => { toggleShiftLock(); slb.textContent = shiftLock ? '시프트락 끄기' : '시프트락 켜기'; };
+    c1.appendChild(slb);
     const c2 = el('div', 'card', '<h4>저장 코드</h4><p>자동 저장은 이 브라우저에 돼요. 다른 기기로 옮기려면 코드를 복사해 두세요.</p>');
     const ta = el('textarea'); ta.id = 'saveCode'; ta.placeholder = '저장 코드를 붙여 넣으세요';
     const rowb = el('div', 'btnRow');
@@ -3428,9 +3472,10 @@ function showModal(title, html, btns) {
   });
   $('modal').classList.remove('hidden');
   modalOpen = true;
+  syncPointerLock();
   setTimeout(() => { const last = box.lastElementChild; if (last) last.focus(); }, 30);
 }
-function hideModal() { $('modal').classList.add('hidden'); modalOpen = false; canvas.focus(); }
+function hideModal() { $('modal').classList.add('hidden'); modalOpen = false; canvas.focus(); syncPointerLock(); }
 
 // ---------- 미니맵 ----------
 const mm = $('minimap'), mctx = mm.getContext('2d');
@@ -3661,21 +3706,23 @@ function updateGold(dt) {
 // =====================================================================
 //  전투: 무기, 몬스터, 사냥터, 보스 레이드
 // =====================================================================
+// 목록 순서 = 얻는 순서. 한 칸 갈 때마다 한 마리 기준 초당 피해가 1.8배 이상 올라요.
+// 유물(보스 첫 처치 보상)은 그 보스를 잡게 해 준 상점 무기보다 세고, 바로 다음 상점 무기보다는 약해요.
 const WEAPONS = [
   { id: 'stick', name: '나무 막대', kind: 'melee', dmg: 6, rate: 2.2, range: 2.4, arc: 110, cost: 0, col: 0x9b6b43, shape: 'stick' },
   { id: 'hammer', name: '돌 망치', kind: 'melee', dmg: 22, rate: 1.6, range: 2.6, arc: 120, cost: 1500, col: 0x9aa5b4, shape: 'hammer' },
   { id: 'iron', name: '철검', kind: 'melee', dmg: 60, rate: 2.4, range: 2.7, arc: 120, cost: 3e4, col: 0xd9e2f0, shape: 'sword' },
   { id: 'jelly', name: '젤리 망치', kind: 'slam', dmg: 160, rate: 2.0, range: 3.2, relic: 'slime', col: 0x6fe08a, shape: 'hammer', glow: true },
-  { id: 'bow', name: '사냥꾼 활', kind: 'bow', dmg: 170, rate: 1.8, range: 20, cost: 5e5, col: 0xb07a45, shape: 'bow' },
+  { id: 'bow', name: '사냥꾼 활', kind: 'bow', dmg: 330, rate: 1.8, range: 20, cost: 5e5, col: 0xb07a45, shape: 'bow' },
   { id: 'flame', name: '화염검', kind: 'melee', dmg: 750, rate: 2.5, range: 3.0, arc: 140, cost: 8e6, col: 0xff6a1f, shape: 'sword', glow: true },
   { id: 'fist', name: '거인의 주먹', kind: 'slam', dmg: 3200, rate: 1.4, range: 4.0, relic: 'golem', col: 0x8a7a6a, shape: 'fist' },
-  { id: 'staff', name: '번개 지팡이', kind: 'chain', dmg: 2000, rate: 1.5, range: 20, chain: 4, cost: 1.5e8, col: 0x7af0ff, shape: 'staff', glow: true },
-  { id: 'axe', name: '서리 도끼', kind: 'melee', dmg: 8000, rate: 1.6, range: 3.4, arc: 170, cost: 3e9, col: 0x9fdcff, shape: 'axe', glow: true },
-  { id: 'scepter', name: '유령 여왕의 홀', kind: 'homing', dmg: 26000, rate: 2.2, range: 24, relic: 'ghost', col: 0xc3a6ff, shape: 'staff', glow: true },
-  { id: 'great', name: '용의 대검', kind: 'melee', dmg: 32000, rate: 1.8, range: 3.8, arc: 160, cost: 8e10, col: 0xff4d6d, shape: 'great', glow: true },
-  { id: 'breath', name: '용의 숨결', kind: 'chain', dmg: 110000, rate: 2.4, range: 16, chain: 6, relic: 'dragon', col: 0xff8f3f, shape: 'staff', glow: true },
-  { id: 'starbow', name: '별빛 활', kind: 'bow', dmg: 125000, rate: 2.2, range: 28, pierce: true, cost: 3e12, col: 0xffd166, shape: 'bow', glow: true },
-  { id: 'scythe', name: '차원 낫', kind: 'slam', dmg: 600000, rate: 2.0, range: 4.8, cost: 1e14, col: 0x9b5de5, shape: 'scythe', glow: true },
+  { id: 'staff', name: '번개 지팡이', kind: 'chain', dmg: 5400, rate: 1.5, range: 20, chain: 4, cost: 1.5e8, col: 0x7af0ff, shape: 'staff', glow: true },
+  { id: 'axe', name: '서리 도끼', kind: 'melee', dmg: 12500, rate: 1.6, range: 3.4, arc: 170, cost: 3e9, col: 0x9fdcff, shape: 'axe', glow: true },
+  { id: 'scepter', name: '유령 여왕의 홀', kind: 'homing', dmg: 16500, rate: 2.2, range: 24, relic: 'ghost', col: 0xc3a6ff, shape: 'staff', glow: true },
+  { id: 'great', name: '용의 대검', kind: 'melee', dmg: 45000, rate: 1.8, range: 3.8, arc: 160, cost: 5e10, col: 0xff4d6d, shape: 'great', glow: true },
+  { id: 'breath', name: '용의 숨결', kind: 'chain', dmg: 62000, rate: 2.4, range: 16, chain: 6, relic: 'dragon', col: 0xff8f3f, shape: 'staff', glow: true },
+  { id: 'starbow', name: '별빛 활', kind: 'bow', dmg: 125000, rate: 2.2, range: 28, pierce: true, cost: 1e12, col: 0xffd166, shape: 'bow', glow: true },
+  { id: 'scythe', name: '차원 낫', kind: 'slam', dmg: 600000, rate: 2.0, range: 4.8, cost: 1e13, col: 0x9b5de5, shape: 'scythe', glow: true },
   { id: 'reaper', name: '군주의 검', kind: 'slam', dmg: 2.5e6, rate: 2.2, range: 5.2, relic: 'lord', col: 0xc77dff, shape: 'great', glow: true },
 ];
 const KIND_TXT = { melee: '앞쪽 베기', slam: '주변 360도 내려찍기', bow: '자동 조준 화살', homing: '유도 마법탄', chain: '연쇄 번개' };
@@ -3701,12 +3748,15 @@ const FIELDS = [
   { id: 5, name: '화산 분지', x: -145, z: 205, r: 18, kinds: ['fire'], n: 9, th: { grass: 0x4a3b40, dirt: 0x3a2d31, dirt2: 0x2a2024 }, deco: 'volcano' },
 ];
 const RAID_C = { x: -100, z: 172, r: 22 };
+// 보스 1단계 체력: 바로 앞 상점 무기(슬라임=철검, 거인=화염검, 여왕=서리 도끼, 드래곤=용의 대검, 군주=차원 낫)를
+// 막 산 무렵의 전투 숙련으로 1분 안팎에 잡히고, 그 전 무기·유물로는 3분 안에 거의 못 잡게 맞췄어요.
+// (이전엔 유물 하나로 다음 보스를 바로 잡는 연쇄가 생겨서 뒤쪽 상점 무기가 쓸모없어졌어요)
 const BOSSES = [
-  { id: 'slime', name: '킹 슬라임', hp: 6000, dmg: 18, reward: 5e4, col: 0x5ee08a, size: 3.2, speed: 3.2, keep: 2.5, model: 'slime', pats: ['slam', 'slam', 'wave', 'summon'], minion: 'slime', relic: 'jelly' },
-  { id: 'golem', name: '바위 거인', hp: 1.2e5, dmg: 45, reward: 5e6, col: 0x8a7a6a, size: 3.4, speed: 2.6, keep: 3, model: 'golem', pats: ['wave', 'rocks', 'slam', 'rocks'], minion: 'golem', relic: 'fist' },
-  { id: 'ghost', name: '유령 여왕', hp: 2.5e6, dmg: 110, reward: 5e8, col: 0xc3a6ff, size: 2.8, speed: 4, keep: 8, model: 'ghost', pats: ['orbs', 'teleport', 'orbs', 'summon'], minion: 'ghost', relic: 'scepter' },
-  { id: 'dragon', name: '화염 드래곤', hp: 1.5e7, dmg: 260, reward: 5e10, col: 0xff5a3d, size: 3.2, speed: 4.5, keep: 7, model: 'dragon', pats: ['breath', 'meteor', 'wave', 'breath', 'summon'], minion: 'fire', relic: 'breath' },
-  { id: 'lord', name: '차원 군주', hp: 2.5e8, dmg: 600, reward: 5e12, col: 0x9b5de5, size: 3.0, speed: 4.5, keep: 5, model: 'lord', pats: ['orbs', 'meteor', 'slam', 'teleport', 'breath', 'wave'], minion: 'fire', relic: 'reaper' },
+  { id: 'slime', name: '킹 슬라임', hp: 1e4, dmg: 18, reward: 5e4, col: 0x5ee08a, size: 3.2, speed: 3.2, keep: 2.5, model: 'slime', pats: ['slam', 'slam', 'wave', 'summon'], minion: 'slime', relic: 'jelly' },
+  { id: 'golem', name: '바위 거인', hp: 3.5e5, dmg: 45, reward: 5e6, col: 0x8a7a6a, size: 3.4, speed: 2.6, keep: 3, model: 'golem', pats: ['wave', 'rocks', 'slam', 'rocks'], minion: 'golem', relic: 'fist' },
+  { id: 'ghost', name: '유령 여왕', hp: 1.5e7, dmg: 110, reward: 5e8, col: 0xc3a6ff, size: 2.8, speed: 4, keep: 8, model: 'ghost', pats: ['orbs', 'teleport', 'orbs', 'summon'], minion: 'ghost', relic: 'scepter' },
+  { id: 'dragon', name: '화염 드래곤', hp: 1.2e8, dmg: 260, reward: 5e10, col: 0xff5a3d, size: 3.2, speed: 4.5, keep: 7, model: 'dragon', pats: ['breath', 'meteor', 'wave', 'breath', 'summon'], minion: 'fire', relic: 'breath' },
+  { id: 'lord', name: '차원 군주', hp: 6e9, dmg: 600, reward: 5e12, col: 0x9b5de5, size: 3.0, speed: 4.5, keep: 5, model: 'lord', pats: ['orbs', 'meteor', 'slam', 'teleport', 'breath', 'wave'], minion: 'fire', relic: 'reaper' },
 ];
 const bossById = (id) => BOSSES.find((b) => b.id === id);
 const PAT_TXT = { slam: '점프 내려찍기 (빨간 원 밖으로)', wave: '충격파 (점프로 넘기)', rocks: '낙석 (빨간 원 피하기)', orbs: '탄막 (점프하거나 피하기)', breath: '불꽃 브레스 (부채꼴 밖으로)', meteor: '유성우 (빨간 원 피하기)', teleport: '순간이동 후 폭발', summon: '부하 소환' };
@@ -3717,7 +3767,10 @@ function maxHp() { return 100 * Math.pow(1.1, S.combat.vital); }
 function masteryCost() { return 800 * Math.pow(1.55, S.combat.mastery); }
 function vitalCost() { return 600 * Math.pow(1.6, S.combat.vital); }
 function curWeapon() { return weaponById(S.combat.equip); }
-function weaponDps(w) { const m = w.kind === 'chain' ? 1 + 0.6 * (w.chain - 1) * 0.3 : 1; return w.dmg * w.rate * combatMult() * 1.1 * m; }
+// 한 마리 기준 초당 피해 (치명타 10% x2 포함). 보스 권장 화력과 바로 비교할 수 있어요
+function weaponDps(w) { return w.dmg * w.rate * combatMult() * 1.1; }
+// 연쇄 번개가 여러 마리를 맞힐 때 합친 피해 배수 (튈 때마다 80%)
+function chainSum(w) { let s = 0; for (let k = 0; k < (w.chain || 1); k++) s += Math.pow(0.8, k); return s; }
 function raidTotal() { let n = 0; for (const b of BOSSES) n += S.raid[b.id] || 0; return n; }
 P.hp = 100; P.atkCD = 0; P.atkT = 9; P.hurtInv = 0; P.lastHurt = -99; P.downT = 0;
 const inHunt = () => P.x < -75 && P.z > 85 && P.y < 30;
@@ -3968,7 +4021,14 @@ function attack() {
   const F = WFX[w.id] || WFX.stick;
   const es = aliveEnemies().filter((e) => Math.abs((e.y || 0) - P.y) < 4);
   let tgt = null, best = 1e9;
-  for (const e of es) { const d = enemyDist(e); if (d < Math.max(w.range, 3) + 4 && d < best) { best = d; tgt = e; } }
+  // 시프트락이면 카메라 정면(조준점) 쪽 적만 자동 조준해요. 바로 붙은 적은 예외
+  const aimF = shiftLock ? [-Math.sin(cam.yaw), -Math.cos(cam.yaw)] : null;
+  for (const e of es) {
+    const d = enemyDist(e);
+    if (!(d < Math.max(w.range, 3) + 4 && d < best)) continue;
+    if (aimF && d > 1.2) { const ax = e.x - P.x, az = e.z - P.z, al = Math.hypot(ax, az) || 1; if ((ax * aimF[0] + az * aimF[1]) / al < SL_AIM_COS) continue; }
+    best = d; tgt = e;
+  }
   if (tgt) P.face = Math.atan2(-(tgt.x - P.x), -(tgt.z - P.z));
   const fx = -Math.sin(P.face), fz = -Math.cos(P.face);
   if (w.kind === 'melee' || w.kind === 'slam') {
@@ -4683,7 +4743,7 @@ function renderWarTab(body) {
   body.appendChild(top);
   shopRefs.push(() => {
     const w = curWeapon();
-    top.innerHTML = '<h4>전투</h4><p>허브 남쪽 붉은 문으로 사냥터에 갈 수 있어요. 클릭·J키·공격 버튼으로 공격하고, 근처 적을 자동으로 조준해요.</p><div class="kv"><span>장착 무기</span><span>' + w.name + '</span><span>초당 피해</span><span>' + fmt(weaponDps(w)) + '</span><span>최대 체력</span><span>' + fmt(maxHp()) + '</span><span>처치한 몬스터</span><span>' + fmt(S.combat.kills) + '</span><span>레이드 단계 합계</span><span>' + raidTotal() + '</span></div>';
+    top.innerHTML = '<h4>전투</h4><p>허브 남쪽 붉은 문으로 사냥터에 갈 수 있어요. 클릭·J키·공격 버튼으로 공격하고, 근처 적을 자동으로 조준해요. 시프트락을 켜면 조준점 쪽 적을 노려요.</p><div class="kv"><span>장착 무기</span><span>' + w.name + '</span><span>초당 피해</span><span>' + fmt(weaponDps(w)) + '</span><span>최대 체력</span><span>' + fmt(maxHp()) + '</span><span>처치한 몬스터</span><span>' + fmt(S.combat.kills) + '</span><span>레이드 단계 합계</span><span>' + raidTotal() + '</span></div>';
   });
   const ms = row('×', '#ff6b5b');
   ms.btn.onclick = () => { if (buyMastery()) updateShop(); else SFX.err(); };
@@ -4701,7 +4761,7 @@ function renderWarTab(body) {
     body.appendChild(r);
     shopRefs.push(() => {
       const own = S.combat.owned.includes(w.id), on = S.combat.equip === w.id;
-      mid.innerHTML = '<div class="nm">' + w.name + (w.relic ? ' <em>유물</em>' : '') + '</div><div class="ds">' + KIND_TXT[w.kind] + (w.chain ? ' ' + w.chain + '번' : '') + (w.pierce ? ' · 관통' : '') + '<br>공격력 <b>' + fmt(w.dmg) + '</b> · 초당 ' + w.rate + '회 · 사거리 ' + w.range + '<br>초당 피해 <b>' + fmt(weaponDps(w)) + '</b></div>';
+      mid.innerHTML = '<div class="nm">' + w.name + (w.relic ? ' <em>유물</em>' : '') + '</div><div class="ds">' + KIND_TXT[w.kind] + (w.chain ? ' ' + w.chain + '번' : '') + (w.pierce ? ' · 관통' : '') + '<br>공격력 <b>' + fmt(w.dmg) + '</b> · 초당 ' + w.rate + '회 · 사거리 ' + w.range + '<br>초당 피해 <b>' + fmt(weaponDps(w)) + '</b>' + (w.chain ? ' · ' + w.chain + '마리면 합계 ' + fmt(weaponDps(w) * chainSum(w)) : '') + '</div>';
       if (on) { btn.className = 'buy done'; btn.textContent = '장착 중'; btn.disabled = true; }
       else if (own) { btn.className = 'buy alt'; btn.textContent = '장착'; btn.disabled = false; }
       else if (w.relic) { btn.className = 'buy'; btn.innerHTML = bossById(w.relic).name + '<br>처치 보상'; btn.disabled = true; }
@@ -5427,6 +5487,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyH') goHome(true);
   if (e.code === 'KeyR') toCheckpoint();
   if (e.code === 'KeyM') toggleMute();
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') toggleShiftLock();
 });
 addEventListener('keyup', (e) => {
   keys.delete(e.code);
@@ -5440,6 +5501,7 @@ canvas.addEventListener('pointerdown', (e) => {
   ensureAudio();
   canvas.focus();
   if (e.pointerType === 'touch' && !document.body.classList.contains('touch')) document.body.classList.add('touch');
+  if (shiftLock && e.pointerType === 'mouse' && !plocked()) syncPointerLock(); // 고정이 풀려 있으면 클릭할 때 다시 고정
   const isJoy = e.pointerType === 'touch' && e.clientX < innerWidth * 0.42 && e.clientY > innerHeight * 0.35 && joy.id == null;
   if (isJoy) {
     joy.id = e.pointerId; joy.ox = e.clientX; joy.oy = e.clientY; joy.active = true; joy.x = joy.y = 0;
@@ -5458,6 +5520,14 @@ canvas.addEventListener('pointermove', (e) => {
     if (d > R) { dx *= R / d; dy *= R / d; }
     joy.x = dx / R; joy.y = dy / R;
     $('joyKnob').style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    return;
+  }
+  if (shiftLock && e.pointerType === 'mouse') {
+    // 시프트락: 드래그 없이 마우스를 움직이기만 해도 시점이 돌아가요 (클릭은 그대로 공격)
+    if (plSkip > 0) { plSkip--; return; } // 고정이 걸리거나 풀린 직후 첫 움직임은 크게 튀는 브라우저가 있어 버려요
+    const k = 0.0032 * S.sens, mx = clamp(e.movementX || 0, -250, 250), my = clamp(e.movementY || 0, -250, 250);
+    cam.yaw -= mx * k;
+    cam.pitch = clamp(cam.pitch + my * k * 0.8, -0.15, 1.25);
     return;
   }
   const p = ptrs.get(e.pointerId);
@@ -5482,7 +5552,10 @@ function endPtr(e) {
   const p = ptrs.get(e.pointerId);
   if (!p) return;
   ptrs.delete(e.pointerId);
-  if (!p.drag && e.type === 'pointerup' && (p.btn === 0 || e.pointerType === 'touch')) { if (!tryClickCrystal(e.clientX, e.clientY)) attack(); }
+  if (!p.drag && e.type === 'pointerup' && (p.btn === 0 || e.pointerType === 'touch')) {
+    const lk = plocked(), sx = lk ? innerWidth / 2 : e.clientX, sy = lk ? innerHeight / 2 : e.clientY; // 마우스가 고정돼 있으면 조준점 기준
+    if (!tryClickCrystal(sx, sy)) attack();
+  }
 }
 canvas.addEventListener('pointerup', endPtr);
 canvas.addEventListener('pointercancel', endPtr);
@@ -5491,6 +5564,46 @@ canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   cam.distT = clamp(cam.distT * (1 + Math.sign(e.deltaY) * 0.1), 4, 22);
 }, { passive: false });
+
+// ---------- 시프트락 ----------
+function plocked() { return document.pointerLockElement === canvas; }
+function useMouseLock() { return !document.body.classList.contains('touch') && typeof canvas.requestPointerLock === 'function'; }
+// 시프트락이 켜져 있고 상점·창이 닫혀 있을 때만 마우스를 고정해요
+function syncPointerLock() {
+  const want = shiftLock && !anyUIOpen() && useMouseLock();
+  if (want && !plocked()) {
+    try { const r = canvas.requestPointerLock(); if (r && typeof r.catch === 'function') r.catch(() => {}); } catch (e) { /* 고정 불가: 커서가 보이는 채로 시프트락 유지 */ }
+  } else if (!want && plocked()) {
+    plSelfExit = true;
+    document.exitPointerLock();
+  }
+}
+function setShiftLock(on, quiet) {
+  on = !!on;
+  if (on === shiftLock) return;
+  shiftLock = on;
+  document.body.classList.toggle('sl', on);
+  const b = $('btnSL');
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  syncPointerLock();
+  if (!quiet) {
+    const touch = document.body.classList.contains('touch');
+    toast(on ? (touch ? '시프트락 켜짐 · 캐릭터가 화면 방향을 봐요' : '시프트락 켜짐 · 마우스로 시점, 클릭으로 공격 · Shift로 끄기') : '시프트락 꺼짐');
+    tone(on ? 660 : 440, 0.07, 'triangle', 0.04);
+  }
+}
+function toggleShiftLock() { setShiftLock(!shiftLock); }
+document.addEventListener('pointerlockchange', () => {
+  const on = plocked();
+  document.body.classList.toggle('plock', on);
+  plSkip = 2;
+  if (on) return;
+  if (plSelfExit) { plSelfExit = false; return; }
+  // Esc로 직접 풀었으면 시프트락도 꺼요. 다른 창으로 나가서 풀린 거면 켜 둔 채로, 다음 클릭에 다시 고정
+  if (shiftLock && !anyUIOpen() && document.hasFocus() && document.visibilityState === 'visible') setShiftLock(false);
+});
+document.addEventListener('pointerlockerror', () => { plSelfExit = false; });
 
 // 버튼
 function pressable(id, down, up) {
@@ -5504,6 +5617,7 @@ function pressable(id, down, up) {
 pressable('btnMine', (e) => mine(e.clientX || null, e.clientY || null));
 pressable('btnAtk', () => { atkHeld = true; attack(); }, () => { atkHeld = false; });
 pressable('btnJump', () => { P.jumpBuf = 0.14; P.jumpHeld = true; }, () => { P.jumpHeld = false; });
+pressable('btnSL', () => toggleShiftLock());
 $('btnShop').onclick = () => { ensureAudio(); shopOpen ? closeShop() : openShop(); };
 $('btnHome').onclick = () => { ensureAudio(); goHome(true); };
 $('btnCp').onclick = () => { ensureAudio(); toCheckpoint(); };
@@ -5528,12 +5642,15 @@ async function initCloud() {
     const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000))]);
     if (snap && snap.exists) {
       const d = snap.data();
-      if (d && typeof d.json === 'string' && (!hadLocalSave || num(d.t) > S.t + 3000)) {
+      if (d && typeof d.json === 'string' && (!hadLocalSave || num(d.t) > localSavedT + 3000)) {
         try {
           applyState(JSON.parse(d.json));
           syncAll();
           goHome(false);
           toast('다른 기기에서 저장한 진행을 불러왔어요', 'good');
+          // 로컬 기준으로 띄운 방치 수익 창은 덮어쓰고, 클라우드 저장 시각 기준으로 다시 계산
+          if (modalOpen && $('mTitle').textContent === OFFLINE_TITLE) hideModal();
+          grantOffline((Date.now() - num(d.t, Date.now())) / 1000);
         } catch (e) { /* 손상된 저장 무시 */ }
       }
     }
@@ -5731,14 +5848,37 @@ function updateWorldFx(dt) {
 }
 
 // =====================================================================
+//  방치 수익 (게임을 끈 동안 · 다른 탭/앱에 있던 동안 · 기기가 잠든 동안 모두 같은 규칙)
+// =====================================================================
+const AWAY_MIN = 60; // 이보다 짧게 비우면 메인 루프가 실시간으로 계산
+const OFFLINE_TITLE = '돌아온 걸 환영해요';
+function grantOffline(away) {
+  if (!(away > AWAY_MIN)) return 0;
+  const capped = Math.min(away, offlineCap());
+  const gain = offlineCps() * capped * offlineEff();
+  if (!(gain >= 1)) return 0;
+  earn(gain);
+  markDirty();
+  if (modalOpen) { toast('자리 비운 동안 +' + fmt(gain) + ' 코인', 'good', 4000); return gain; }
+  const h = Math.floor(capped / 3600), m = Math.floor((capped % 3600) / 60);
+  showModal(OFFLINE_TITLE, '<p>' + (h ? h + '시간 ' : '') + m + '분 동안 드로퍼가 일했어요.</p><p class="hl" style="font-size:28px;margin:6px 0 10px">+' + fmt(gain) + ' 코인</p><p>방치 효율 ' + Math.round(offlineEff() * 100) + '% · 최대 ' + (offlineCap() / 3600) + '시간까지 쌓여요. 상점의 방치 효율 강화로 늘릴 수 있어요.</p>', [{ t: '받기', primary: true }]);
+  return gain;
+}
+
+// =====================================================================
 //  메인 루프
 // =====================================================================
-let last = performance.now(), acc = 0;
+let last = performance.now(), acc = 0, lastWall = Date.now();
 const STEP = 1 / 120;
 function frame(now) {
   requestAnimationFrame(frame);
-  const rdt = Math.min(Math.max(0, (now - last) / 1000), 3600);
+  let rdt = Math.min(Math.max(0, (now - last) / 1000), AWAY_MIN);
   last = now;
+  // 탭이 숨겨졌거나 기기가 잠들어 루프가 멈춰 있었다면 그 시간은 방치 수익으로 정산
+  // (performance.now()는 절전 중에 멈출 수 있어서 실제 시각으로 재요)
+  const wall = Date.now(), awayWall = (wall - lastWall) / 1000;
+  lastWall = wall;
+  if (awayWall > AWAY_MIN) { grantOffline(awayWall); rdt = 0; }
   // 경제 (실제 경과 시간 기준)
   earn(baseCps() * rdt);
   autoAcc += autoRate() * rdt;
@@ -5926,11 +6066,11 @@ fbScheduleFlush(8000);
 // =====================================================================
 function welcome() {
   const ctl = IS_TOUCH
-    ? '<div class="ctl"><kbd>왼쪽 아래 드래그</kbd><span>이동</span><kbd>점프 버튼</kbd><span>점프</span><kbd>화면 드래그</kbd><span>시점 돌리기</span><kbd>채굴 버튼</kbd><span>코인 얻기</span><kbd>공격 버튼</kbd><span>무기 공격 (누르고 있으면 연속)</span></div>'
-    : '<div class="ctl"><kbd>WASD</kbd><span>이동</span><kbd>Space</kbd><span>점프 (길게 누르면 더 높이)</span><kbd>드래그 · 휠</kbd><span>시점 돌리기 · 확대</span><kbd>크리스탈 클릭 · F</kbd><span>채굴해서 코인 얻기</span><kbd>클릭 · J (누르고 있기)</kbd><span>무기 공격</span><kbd>B · H · R</kbd><span>상점 · 허브 · 체크포인트</span></div>';
+    ? '<div class="ctl"><kbd>왼쪽 아래 드래그</kbd><span>이동</span><kbd>점프 버튼</kbd><span>점프</span><kbd>화면 드래그</kbd><span>시점 돌리기</span><kbd>채굴 버튼</kbd><span>코인 얻기</span><kbd>공격 버튼</kbd><span>무기 공격 (누르고 있으면 연속)</span><kbd>자물쇠 버튼</kbd><span>시프트락 (캐릭터가 화면 방향을 봐요)</span></div>'
+    : '<div class="ctl"><kbd>WASD</kbd><span>이동</span><kbd>Space</kbd><span>점프 (길게 누르면 더 높이)</span><kbd>드래그 · 휠</kbd><span>시점 돌리기 · 확대</span><kbd>크리스탈 클릭 · F</kbd><span>채굴해서 코인 얻기</span><kbd>클릭 · J (누르고 있기)</kbd><span>무기 공격</span><kbd>Shift</kbd><span>시프트락 (마우스 고정 · 조준점으로 공격)</span><kbd>B · H · R</kbd><span>상점 · 허브 · 체크포인트</span></div>';
   showModal(GAME_NAME, '<p>구름 위 섬에서 <span class="hl">크리스탈을 채굴</span>하고, <span class="ml">드로퍼</span>를 지어 자는 동안에도 코인을 모으세요.</p>' + ctl +
     '<p>다리를 놓아 섬의 <span class="hl">점프맵 코스</span>에 도전하고, 끝없이 이어지는 <span class="hl">하늘 탑</span>, 매일 바뀌는 <span class="hl">오늘의 도전</span>, 무기를 들고 떠나는 <span class="hl">사냥터와 보스 레이드</span>까지 즐겨 보세요.</p>',
-    [{ t: '시작하기', primary: true, fn: () => { S.welcomed = true; S.seenV2 = true; S.seenV3 = true; save(); } }]);
+    [{ t: '시작하기', primary: true, fn: () => { S.welcomed = true; S.seenV2 = true; S.seenV3 = true; S.seenV4 = true; save(); requestPersist(); } }]);
 }
 function whatsNewV3() {
   showModal('사냥터와 보스 레이드가 열렸어요', '<div class="ctl">' +
@@ -5940,6 +6080,16 @@ function whatsNewV3() {
     '<kbd>공격</kbd><span>' + (IS_TOUCH ? '공격 버튼 (누르고 있으면 연속)' : '클릭하거나 J키 (누르고 있으면 연속)') + ' · 가까운 적을 자동 조준</span></div>' +
     '<p>보스의 빨간 원과 부채꼴은 피하고, 주황 충격파는 점프로 넘으세요.</p>',
     [{ t: '사냥하러 가기', primary: true, fn: () => { S.seenV3 = true; save(); enterHunt(); } }, { t: '나중에', fn: () => { S.seenV3 = true; save(); } }]);
+}
+function whatsNewV4() {
+  const sl = IS_TOUCH ? '오른쪽 아래 자물쇠 버튼' : 'Shift 키 (Esc나 Shift로 풀기)';
+  showModal('시프트락 · 무기 밸런스 업데이트', '<div class="ctl">' +
+    '<kbd>시프트락</kbd><span>' + sl + '. 캐릭터가 화면 방향을 보고, 가운데 조준점 쪽으로 공격해요</span>' +
+    '<kbd>무기</kbd><span>상점 목록 순서대로 항상 더 세져요. 사냥꾼 활·번개 지팡이·서리 도끼·용의 대검이 강해지고, 용의 대검·별빛 활·차원 낫은 더 싸졌어요</span>' +
+    '<kbd>유물</kbd><span>유령 여왕의 홀·용의 숨결은 바로 다음 상점 무기보다 약하게 맞췄어요</span>' +
+    '<kbd>보스</kbd><span>보스 체력이 늘었어요. 유물 하나로 다음 보스를 바로 잡지 않고, 무기를 순서대로 모아 잡게 돼요</span></div>' +
+    '<p>초당 피해는 이제 한 마리 기준이에요. 연쇄 번개 무기는 여러 마리를 함께 맞히면 더 강해요.</p>',
+    [{ t: '확인', primary: true, fn: () => { S.seenV4 = true; save(); } }]);
 }
 function whatsNew() {
   showModal('하늘섬이 넓어졌어요', '<p>기존 진행은 그대로 두고, 오래 즐길 거리를 더했어요.</p><div class="ctl">' +
@@ -5963,6 +6113,8 @@ function boot() {
   if (issues.length) console.warn('[course] 도달 어려운 구간', issues);
   const saved = loadLocal();
   hadLocalSave = !!saved;
+  localSavedT = saved ? num(saved.t) : 0;
+  if (saved) requestPersist();
   applyState(saved || defaultState());
   if (saved && (!saved.v || saved.v < 2 || !saved.seenV3)) { S.quest = 0; while (S.quest < QUESTS.length && questAt(S.quest).done()) S.quest++; S.welcomed = true; }
   towerWindow(true);
@@ -5971,21 +6123,11 @@ function boot() {
   P.respawn = { ...SPAWN };
   camTarget.set(P.x, P.y + 1.4, P.z);
   // 오프라인 수익
-  if (saved) {
-    const away = (Date.now() - num(saved.t, Date.now())) / 1000;
-    if (away > 60) {
-      const capped = Math.min(away, offlineCap());
-      const gain = offlineCps() * capped * offlineEff();
-      if (gain >= 1) {
-        earn(gain);
-        const h = Math.floor(capped / 3600), m = Math.floor((capped % 3600) / 60);
-        showModal('돌아온 걸 환영해요', '<p>' + (h ? h + '시간 ' : '') + m + '분 동안 드로퍼가 일했어요.</p><p class="hl" style="font-size:28px;margin:6px 0 10px">+' + fmt(gain) + ' 코인</p><p>방치 효율 ' + Math.round(offlineEff() * 100) + '% · 최대 8시간까지 쌓여요. 상점의 방치 효율 강화로 늘릴 수 있어요.</p>', [{ t: '받기', primary: true }]);
-      }
-    }
-  }
+  if (saved) grantOffline((Date.now() - num(saved.t, Date.now())) / 1000);
   if (!S.welcomed) welcome();
   else if (!S.seenV2) whatsNew();
   else if (!S.seenV3) whatsNewV3();
+  else if (!S.seenV4) whatsNewV4();
   checkAch();
   checkQuest();
   // 폰트 로드 후 라벨 다시 그리기
@@ -5995,10 +6137,10 @@ function boot() {
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
   addEventListener('pagehide', save);
   window.__gameStarted = true;
-  window.__game = { updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
+  window.__game = { setShiftLock, toggleShiftLock, get shiftLock() { return shiftLock; }, updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
   $('loading').classList.add('fade');
   setTimeout(() => $('loading').remove(), 600);
-  requestAnimationFrame((t) => { last = t; frame(t); });
+  requestAnimationFrame((t) => { last = t; lastWall = Date.now(); frame(t); });
   initCloud();
 }
 boot();
