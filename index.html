@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>하늘섬 점프 타이쿤</title>
+<title>쿠크다스의 모험</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
@@ -216,6 +216,21 @@ input[type=range] { width: 100%; accent-color: var(--gold); touch-action: auto; 
 #mBody .ml { color: var(--mint); }
 #mBtns { display: flex; gap: 8px; margin-top: 16px; }
 #mBtns .buy { flex: 1; padding: 12px; font-size: 17px; }
+#mBtns { flex-wrap: wrap; }
+a.buy { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+/* ---------- 피드백 ---------- */
+.fbSeg { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 12px; }
+.fbSeg button { flex: 1 1 auto; min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--panel-2); color: var(--muted); font-size: 15px; }
+.fbSeg button.on { background: var(--gold); color: #3a2400; border-color: transparent; }
+.fbL { display: block; font-size: 14px; color: var(--muted); margin: 0 0 4px; }
+#mBody textarea.fbTa { min-height: 120px; font-family: inherit; font-size: 16px; line-height: 1.5; resize: vertical; }
+.fbIn { width: 100%; height: 44px; border-radius: 10px; background: #0e1430; color: #fff; border: 1px solid var(--line); padding: 0 10px; font-size: 16px; font-family: inherit; -webkit-user-select: text; user-select: text; touch-action: auto; }
+.fbIn:focus-visible, #mBody textarea:focus-visible, a.buy:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.fbMeta { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+.fbMeta b { font-weight: normal; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#fbStatus { min-height: 1.5em; margin-top: 10px; font-size: 14px; color: var(--mint); }
+#fbStatus.bad { color: var(--coral); }
+#mBody .fbMail { color: var(--sky); font-size: 18px; word-break: break-all; -webkit-user-select: text; user-select: text; }
 
 #loading { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: linear-gradient(180deg, #4aa6f0, #bfe3ff 60%, #ffe9c7); color: #fff; text-align: center; transition: opacity .5s; }
 #loading h1 { font-weight: normal; font-size: clamp(34px, 7vw, 60px); margin: 0; text-shadow: 0 4px 0 rgba(20,60,120,.35); }
@@ -276,6 +291,7 @@ input[type=range] { width: 100%; accent-color: var(--gold); touch-action: auto; 
       <button id="btnHome" class="ibtn" title="허브 섬으로 돌아가기 (H)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span>집</span> <kbd>H</kbd></button>
       <button id="btnCp" class="ibtn" title="마지막 체크포인트로 (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/></svg><span>체크포인트</span> <kbd>R</kbd></button>
       <button id="btnSound" class="ibtn" title="소리 켜기/끄기 (M)"><svg id="sndIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg><span>소리</span> <kbd>M</kbd></button>
+      <button id="btnFb" class="ibtn" title="개발자에게 피드백 보내기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H10l-4 4v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><span>피드백</span></button>
     </div>
   </div>
 
@@ -310,7 +326,7 @@ input[type=range] { width: 100%; accent-color: var(--gold); touch-action: auto; 
 
 <div id="modal" class="hidden" role="dialog" aria-modal="true"><div class="mcard"><h3 id="mTitle"></h3><div id="mBody"></div><div id="mBtns"></div></div></div>
 
-<div id="loading"><div><h1>하늘섬 점프 타이쿤</h1><p id="loadMsg">섬을 띄우는 중…</p></div></div>
+<div id="loading"><div><h1>쿠크다스의 모험</h1><p id="loadMsg">섬을 띄우는 중…</p></div></div>
 
 <script>
   setTimeout(function () {
@@ -3388,6 +3404,11 @@ function renderShop() {
     br.onclick = () => showModal('정말 초기화할까요?', '<p>코인, 보석, 드로퍼, 다리, 기록, 별 조각, 꾸미기가 모두 사라져요. 되돌릴 수 없어요.</p>', [{ t: '취소' }, { t: '초기화', danger: true, fn: () => { resetGame(); closeShop(); toast('새 게임을 시작했어요'); } }]);
     c4.appendChild(br);
     body.appendChild(c4);
+    const c5 = el('div', 'card', '<h4>피드백</h4><p>버그, 아이디어, 좋았던 점을 개발자에게 보내 주세요.</p>');
+    const bf = el('button', 'buy alt wide', '피드백 보내기');
+    bf.onclick = openFeedback;
+    c5.appendChild(bf);
+    body.appendChild(c5);
     body.appendChild(el('div', 'card', '<h4>단축키</h4><p>WASD/방향키 이동 · Space 점프 · 드래그 시점 · 휠 줌 · F 채굴 · B 상점 · H 허브 · R 체크포인트 · M 소리</p>'));
   }
   updateShop();
@@ -5488,6 +5509,7 @@ $('btnShop').onclick = () => { ensureAudio(); shopOpen ? closeShop() : openShop(
 $('btnHome').onclick = () => { ensureAudio(); goHome(true); };
 $('btnCp').onclick = () => { ensureAudio(); toCheckpoint(); };
 $('btnSound').onclick = () => { ensureAudio(); toggleMute(); };
+$('btnFb').onclick = () => { ensureAudio(); openFeedback(); };
 $('shopClose').onclick = closeShop;
 $('modal').addEventListener('pointerdown', (e) => { if (e.target === $('modal')) hideModal(); });
 
@@ -5757,13 +5779,150 @@ function frame(now) {
 }
 
 // =====================================================================
+//  피드백 (일반 웹: 개발자 메일로 바로 전송 · claude.ai: 게임 저장소에 보관 · 둘 다 안 되면 메일 앱/복사)
+// =====================================================================
+const GAME_NAME = '쿠크다스의 모험';
+const GAME_VER = 'v1.3';
+// ↓ 피드백을 받을 메일 주소를 따옴표 안에 넣으세요. 비워 두면 메일 전송은 건너뛰어요.
+const FB_EMAIL = '';
+const FB_ENDPOINT = 'https://formsubmit.co/ajax/';
+const FB_KINDS = [['bug', '버그'], ['idea', '제안'], ['like', '좋았던 점'], ['etc', '기타']];
+const FB_MAX = 1000, FB_COOLDOWN = 30;
+const fb = { kind: 'idea', text: '', from: '', busy: false, lastSent: 0 };
+function inClaude() { return !!(window.claude && typeof window.claude.use === 'function'); }
+function fbKindName(k) { const f = FB_KINDS.find((x) => x[0] === k); return f ? f[1] : '기타'; }
+function fbInfo() {
+  return GAME_VER + ' · 플레이 ' + fmtDur(S.play) + ' · 환생 ' + (S.rebirths || 0) + '회 · 목표 ' + (S.quest + 1) + '번째 · 하늘 탑 ' + ((S.tower && S.tower.best) || 0) + '층 · 화면 ' + innerWidth + '×' + innerHeight + (IS_TOUCH ? ' (터치)' : '');
+}
+function openFeedback() {
+  const kinds = FB_KINDS.map(([k, n]) => '<button type="button" data-k="' + k + '" aria-pressed="' + (k === fb.kind) + '"' + (k === fb.kind ? ' class="on"' : '') + '>' + n + '</button>').join('');
+  showModal('피드백 보내기',
+    '<p>버그, 아이디어, 좋았던 점 무엇이든 적어 주세요. 개발자가 하나하나 읽어요.</p>' +
+    '<div class="fbSeg" role="group" aria-label="피드백 종류">' + kinds + '</div>' +
+    '<label class="fbL" for="fbText">내용</label>' +
+    '<textarea id="fbText" class="fbTa" maxlength="' + FB_MAX + '" placeholder="예) 하늘 탑 12층 발판이 너무 멀어요"></textarea>' +
+    '<div class="fbMeta"><span>게임 버전과 진행 상황이 함께 전달돼요</span><b id="fbCount">0/' + FB_MAX + '</b></div>' +
+    '<label class="fbL" for="fbFrom">답장 받을 연락처 (선택)</label>' +
+    '<input id="fbFrom" class="fbIn" type="text" maxlength="80" autocomplete="email" placeholder="이메일 또는 이름">' +
+    '<div id="fbStatus" role="status" aria-live="polite"></div>',
+    [{ t: '닫기' }]);
+  const ta = $('fbText'), from = $('fbFrom'), cnt = $('fbCount');
+  ta.value = fb.text;
+  from.value = fb.from;
+  const upd = () => { fb.text = ta.value; cnt.textContent = ta.value.length + '/' + FB_MAX; };
+  ta.addEventListener('input', upd);
+  upd();
+  from.addEventListener('input', () => { fb.from = from.value; });
+  for (const b of $('mBody').querySelectorAll('.fbSeg button')) {
+    b.onclick = () => {
+      fb.kind = b.dataset.k;
+      for (const o of b.parentNode.children) { const on = o === b; o.classList.toggle('on', on); o.setAttribute('aria-pressed', String(on)); }
+    };
+  }
+  const send = el('button', 'buy', fb.busy ? '보내는 중…' : '보내기');
+  send.id = 'fbSend';
+  send.disabled = fb.busy;
+  send.onclick = submitFeedback;
+  $('mBtns').appendChild(send);
+  if (!IS_TOUCH) setTimeout(() => { if ($('fbText') === ta) ta.focus(); }, 60);
+}
+async function submitFeedback() {
+  if (fb.busy) return;
+  const st = $('fbStatus');
+  const say = (m, bad) => { if (st) { st.textContent = m; st.className = bad ? 'bad' : ''; } };
+  const text = fb.text.trim();
+  if (text.length < 5) { say('5글자 이상 적어 주세요.', true); SFX.err(); const ta = $('fbText'); if (ta) ta.focus(); return; }
+  const wait = Math.ceil(FB_COOLDOWN - (Date.now() - fb.lastSent) / 1000);
+  if (wait > 0) { say(wait + '초 뒤에 다시 보낼 수 있어요.', true); return; }
+  fb.busy = true;
+  const btn = $('fbSend');
+  if (btn) { btn.disabled = true; btn.textContent = '보내는 중…'; }
+  say('');
+  const item = { kind: fb.kind, kindName: fbKindName(fb.kind), text: text.slice(0, FB_MAX), from: fb.from.trim().slice(0, 80), info: fbInfo(), ua: String(navigator.userAgent || '').slice(0, 200), at: Date.now() };
+  let how = null;
+  try { how = (await fbMail(item)) || (await fbStore(item)); } catch (e) { how = null; }
+  fb.busy = false;
+  const formOpen = modalOpen && !!$('fbText');
+  if (how) {
+    fb.lastSent = Date.now();
+    fb.text = '';
+    SFX.quest();
+    const msg = how === 'mail' ? '개발자 메일로 피드백을 보냈어요.' : '피드백이 저장됐어요. 개발자가 확인할게요.';
+    if (formOpen) showModal('고마워요!', '<p>' + msg + '</p><p>보내 준 의견은 다음 업데이트에 큰 도움이 돼요.</p>', [{ t: '확인', primary: true }]);
+    else toast(msg, 'good');
+  } else if (formOpen) fbFallback(item);
+  else toast('피드백을 보내지 못했어요. 다시 시도해 주세요', 'bad');
+}
+// 일반 웹(https)에서 FormSubmit으로 개발자 메일에 바로 보내요. claude.ai 안에서는 외부 요청이 막혀 있어 건너뛰어요.
+async function fbMail(item) {
+  if (!FB_EMAIL || inClaude() || !/^https?:$/.test(location.protocol)) return null;
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const tm = setTimeout(() => { if (ctl) ctl.abort(); }, 12000);
+  try {
+    const body = {
+      _subject: '[' + GAME_NAME + '] ' + item.kindName + ' 피드백',
+      _template: 'table',
+      _captcha: 'false',
+      '종류': item.kindName,
+      '내용': item.text,
+      '연락처': item.from || '(없음)',
+      '진행 상황': item.info,
+      '기기': item.ua,
+      '보낸 시각': new Date(item.at).toLocaleString('ko-KR'),
+    };
+    if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(item.from)) body._replyto = item.from;
+    const r = await fetch(FB_ENDPOINT + FB_EMAIL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && String(d.success) === 'true') return 'mail';
+    console.warn('[feedback] 메일 전송 실패', d && d.message);
+    return null;
+  } catch (e) { return null; } finally { clearTimeout(tm); }
+}
+// claude.ai에서 열었을 때: 게임 저장소(feedback/<사용자>/items)에 보관해요. 개발자(소유자)만 읽을 수 있어요.
+async function fbStore(item) {
+  if (!cloud.db || !cloud.uid) return null;
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  try {
+    await Promise.race([
+      cloud.db.doc('feedback/' + cloud.uid + '/items/' + id).set(item),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 10000)),
+    ]);
+    return 'stored';
+  } catch (e) { return null; }
+}
+function fbFallback(item) {
+  const subject = '[' + GAME_NAME + '] ' + item.kindName + ' 피드백';
+  const bodyTxt = item.text + '\n\n연락처: ' + (item.from || '(없음)') + '\n진행 상황: ' + item.info;
+  showModal(FB_EMAIL ? '메일로 보내 주세요' : '내용을 복사해 주세요',
+    '<p>지금은 게임에서 바로 보내지 못했어요. ' + (FB_EMAIL ? '메일 앱을 열거나, 내용을 복사해서 아래 주소로 보내 주세요.' : '내용을 복사해서 개발자에게 전해 주세요.') + '</p>' +
+    (FB_EMAIL ? '<p class="fbMail">' + esc(FB_EMAIL) + '</p>' : '') +
+    '<textarea id="fbCopy" class="fbTa" readonly aria-label="보낼 내용"></textarea>' +
+    '<div id="fbStatus" role="status" aria-live="polite"></div>',
+    [{ t: '돌아가기', fn: openFeedback }]);
+  const ta = $('fbCopy'), st = $('fbStatus');
+  ta.value = subject + '\n\n' + bodyTxt;
+  const cp = el('button', 'buy alt', '내용 복사');
+  cp.onclick = () => {
+    const ok = () => { st.textContent = '복사했어요. 메일 본문에 붙여 넣어 주세요.'; st.className = ''; };
+    const no = () => { ta.focus(); ta.select(); st.textContent = '내용을 길게 눌러 직접 복사해 주세요.'; st.className = 'bad'; };
+    try { navigator.clipboard.writeText(ta.value).then(ok, no); } catch (e) { no(); }
+  };
+  $('mBtns').appendChild(cp);
+  if (FB_EMAIL) {
+    const ma = el('a', 'buy', '메일 앱 열기');
+    ma.href = 'mailto:' + FB_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyTxt);
+    $('mBtns').appendChild(ma);
+  }
+}
+
+// =====================================================================
 //  시작
 // =====================================================================
 function welcome() {
   const ctl = IS_TOUCH
     ? '<div class="ctl"><kbd>왼쪽 아래 드래그</kbd><span>이동</span><kbd>점프 버튼</kbd><span>점프</span><kbd>화면 드래그</kbd><span>시점 돌리기</span><kbd>채굴 버튼</kbd><span>코인 얻기</span><kbd>공격 버튼</kbd><span>무기 공격 (누르고 있으면 연속)</span></div>'
     : '<div class="ctl"><kbd>WASD</kbd><span>이동</span><kbd>Space</kbd><span>점프 (길게 누르면 더 높이)</span><kbd>드래그 · 휠</kbd><span>시점 돌리기 · 확대</span><kbd>크리스탈 클릭 · F</kbd><span>채굴해서 코인 얻기</span><kbd>클릭 · J (누르고 있기)</kbd><span>무기 공격</span><kbd>B · H · R</kbd><span>상점 · 허브 · 체크포인트</span></div>';
-  showModal('하늘섬 점프 타이쿤', '<p>구름 위 섬에서 <span class="hl">크리스탈을 채굴</span>하고, <span class="ml">드로퍼</span>를 지어 자는 동안에도 코인을 모으세요.</p>' + ctl +
+  showModal(GAME_NAME, '<p>구름 위 섬에서 <span class="hl">크리스탈을 채굴</span>하고, <span class="ml">드로퍼</span>를 지어 자는 동안에도 코인을 모으세요.</p>' + ctl +
     '<p>다리를 놓아 섬의 <span class="hl">점프맵 코스</span>에 도전하고, 끝없이 이어지는 <span class="hl">하늘 탑</span>, 매일 바뀌는 <span class="hl">오늘의 도전</span>, 무기를 들고 떠나는 <span class="hl">사냥터와 보스 레이드</span>까지 즐겨 보세요.</p>',
     [{ t: '시작하기', primary: true, fn: () => { S.welcomed = true; S.seenV2 = true; S.seenV3 = true; save(); } }]);
 }
