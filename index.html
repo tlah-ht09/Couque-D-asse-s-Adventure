@@ -2155,14 +2155,17 @@ function updatePlayer(h) {
   const wx = rx * ix + fx * iy, wz = rz * ix + fz * iy;
   const spd = SPEED * speedMult();
   const onIce = P.grounded && P.ground && P.ground.ice;
+  const hasInput = (ix || iy) && !L;
+  const turning = hasInput && (wx * P.vx + wz * P.vz) < 0;
   let rate;
   if (L) rate = 0;
   else if (P.knock > 0) rate = 1.2;
-  else if (P.grounded) rate = onIce ? 1.6 : 20;
-  else rate = (ix || iy) ? 6 : 1.2;
+  else if (P.grounded) rate = onIce ? 1.6 : !hasInput ? 30 : turning ? 35 : 20;
+  else rate = !hasInput ? 8 : turning ? 14 : 10;
   const k = 1 - Math.exp(-rate * h);
   P.vx += (wx * spd - P.vx) * k;
   P.vz += (wz * spd - P.vz) * k;
+  if (P.grounded && !hasInput && !onIce && P.knock <= 0 && Math.hypot(P.vx, P.vz) < 0.3) P.vx = P.vz = 0;
   if ((ix || iy) && !L) P.face = Math.atan2(-wx, -wz);
   if (shiftLock && !L) P.face = cam.yaw;
 
@@ -2185,7 +2188,8 @@ function updatePlayer(h) {
   if (!P.jumpHeld && P.vy > 4 && !P.cut && !L && !P.bounced) { P.vy *= 0.55; P.cut = true; }
 
   // 중력
-  P.vy -= GRAV * (L ? 1 : gscale()) * h;
+  const fallMul = (P.vy < 0 && !L && !P.bounced) ? 1.3 : 1;
+  P.vy -= GRAV * fallMul * (L ? 1 : gscale()) * h;
   if (P.vy < -55) P.vy = -55;
 
   // 발판과 함께 이동
