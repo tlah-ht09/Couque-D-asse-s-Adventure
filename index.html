@@ -230,7 +230,6 @@ a.buy { display: inline-flex; align-items: center; justify-content: center; text
 .fbMeta b { font-weight: normal; font-variant-numeric: tabular-nums; white-space: nowrap; }
 #fbStatus { min-height: 1.5em; margin-top: 10px; font-size: 14px; color: var(--mint); }
 #fbStatus.bad { color: var(--coral); }
-#mBody .fbMail { color: var(--sky); font-size: 18px; word-break: break-all; -webkit-user-select: text; user-select: text; }
 
 #loading { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; background: linear-gradient(180deg, #4aa6f0, #bfe3ff 60%, #ffe9c7); color: #fff; text-align: center; transition: opacity .5s; }
 #loading h1 { font-weight: normal; font-size: clamp(34px, 7vw, 60px); margin: 0; text-shadow: 0 4px 0 rgba(20,60,120,.35); }
@@ -3404,7 +3403,7 @@ function renderShop() {
     br.onclick = () => showModal('정말 초기화할까요?', '<p>코인, 보석, 드로퍼, 다리, 기록, 별 조각, 꾸미기가 모두 사라져요. 되돌릴 수 없어요.</p>', [{ t: '취소' }, { t: '초기화', danger: true, fn: () => { resetGame(); closeShop(); toast('새 게임을 시작했어요'); } }]);
     c4.appendChild(br);
     body.appendChild(c4);
-    const c5 = el('div', 'card', '<h4>피드백</h4><p>버그, 아이디어, 좋았던 점을 개발자에게 보내 주세요.</p>');
+    const c5 = el('div', 'card', '<h4>피드백</h4><p>버그, 아이디어, 좋았던 점을 개발자에게 보내 주세요.</p>' + (fbOutbox.length ? '<p>보내는 중인 피드백 ' + fbOutbox.length + '개 · 연결되면 자동으로 보내요</p>' : ''));
     const bf = el('button', 'buy alt wide', '피드백 보내기');
     bf.onclick = openFeedback;
     c5.appendChild(bf);
@@ -5779,7 +5778,7 @@ function frame(now) {
 }
 
 // =====================================================================
-//  피드백 (일반 웹: 개발자 메일로 바로 전송 · claude.ai: 게임 저장소에 보관 · 둘 다 안 되면 메일 앱/복사)
+//  피드백 (일반 웹: 개발자 메일로 바로 전송 · claude.ai: 게임 저장소에 보관 · 실패하면 보관했다가 자동 재전송)
 // =====================================================================
 const GAME_NAME = '쿠크다스의 모험';
 const GAME_VER = 'v1.3';
@@ -5841,17 +5840,14 @@ async function submitFeedback() {
   const item = { kind: fb.kind, kindName: fbKindName(fb.kind), text: text.slice(0, FB_MAX), from: fb.from.trim().slice(0, 80), info: fbInfo(), ua: String(navigator.userAgent || '').slice(0, 200), at: Date.now() };
   let how = null;
   try { how = (await fbMail(item)) || (await fbStore(item)); } catch (e) { how = null; }
+  if (how) { if (fbOutbox.length) fbScheduleFlush(1500); } else fbQueue(item);
   fb.busy = false;
-  const formOpen = modalOpen && !!$('fbText');
-  if (how) {
-    fb.lastSent = Date.now();
-    fb.text = '';
-    SFX.quest();
-    const msg = how === 'mail' ? '개발자 메일로 피드백을 보냈어요.' : '피드백이 저장됐어요. 개발자가 확인할게요.';
-    if (formOpen) showModal('고마워요!', '<p>' + msg + '</p><p>보내 준 의견은 다음 업데이트에 큰 도움이 돼요.</p>', [{ t: '확인', primary: true }]);
-    else toast(msg, 'good');
-  } else if (formOpen) fbFallback(item);
-  else toast('피드백을 보내지 못했어요. 다시 시도해 주세요', 'bad');
+  fb.lastSent = Date.now();
+  fb.text = '';
+  SFX.quest();
+  const msg = how === 'mail' ? '개발자 메일로 피드백을 보냈어요.' : how === 'stored' ? '피드백이 저장됐어요. 개발자가 확인할게요.' : '피드백을 받았어요. 지금은 전송이 밀려 있어서, 게임이 알아서 다시 보낼게요.';
+  if (modalOpen && $('fbText')) showModal('고마워요!', '<p>' + msg + '</p><p>보내 준 의견은 다음 업데이트에 큰 도움이 돼요.</p>', [{ t: '확인', primary: true }]);
+  else toast(msg, 'good');
 }
 // 일반 웹(https)에서 FormSubmit으로 개발자 메일에 바로 보내요. claude.ai 안에서는 외부 요청이 막혀 있어 건너뛰어요.
 async function fbMail(item) {
@@ -5890,30 +5886,40 @@ async function fbStore(item) {
     return 'stored';
   } catch (e) { return null; }
 }
-function fbFallback(item) {
-  const subject = '[' + GAME_NAME + '] ' + item.kindName + ' 피드백';
-  const bodyTxt = item.text + '\n\n연락처: ' + (item.from || '(없음)') + '\n진행 상황: ' + item.info;
-  showModal(FB_EMAIL ? '메일로 보내 주세요' : '내용을 복사해 주세요',
-    '<p>지금은 게임에서 바로 보내지 못했어요. ' + (FB_EMAIL ? '메일 앱을 열거나, 내용을 복사해서 아래 주소로 보내 주세요.' : '내용을 복사해서 개발자에게 전해 주세요.') + '</p>' +
-    (FB_EMAIL ? '<p class="fbMail">' + esc(FB_EMAIL) + '</p>' : '') +
-    '<textarea id="fbCopy" class="fbTa" readonly aria-label="보낼 내용"></textarea>' +
-    '<div id="fbStatus" role="status" aria-live="polite"></div>',
-    [{ t: '돌아가기', fn: openFeedback }]);
-  const ta = $('fbCopy'), st = $('fbStatus');
-  ta.value = subject + '\n\n' + bodyTxt;
-  const cp = el('button', 'buy alt', '내용 복사');
-  cp.onclick = () => {
-    const ok = () => { st.textContent = '복사했어요. 메일 본문에 붙여 넣어 주세요.'; st.className = ''; };
-    const no = () => { ta.focus(); ta.select(); st.textContent = '내용을 길게 눌러 직접 복사해 주세요.'; st.className = 'bad'; };
-    try { navigator.clipboard.writeText(ta.value).then(ok, no); } catch (e) { no(); }
-  };
-  $('mBtns').appendChild(cp);
-  if (FB_EMAIL) {
-    const ma = el('a', 'buy', '메일 앱 열기');
-    ma.href = 'mailto:' + FB_EMAIL + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(bodyTxt);
-    $('mBtns').appendChild(ma);
-  }
+// 보내지 못한 피드백은 이 브라우저에 보관했다가 자동으로 다시 보내요. (켤 때 8초 뒤, 그 뒤 1~5분마다, 인터넷이 다시 연결될 때)
+const FB_OUTBOX_KEY = 'couqueFeedbackOutbox';
+const FB_OUTBOX_MAX = 20;
+let fbOutbox = [];
+try { const j = JSON.parse(localStorage.getItem(FB_OUTBOX_KEY) || '[]'); if (Array.isArray(j)) fbOutbox = j.filter((x) => x && typeof x.text === 'string').slice(-FB_OUTBOX_MAX); } catch (e) { /* 저장소를 못 쓰면 메모리에만 */ }
+let fbFlushT = 0, fbFlushing = false;
+function fbSaveOutbox() { try { localStorage.setItem(FB_OUTBOX_KEY, JSON.stringify(fbOutbox)); } catch (e) { /* 메모리에만 */ } }
+function fbQueue(item) {
+  fbOutbox.push(item);
+  if (fbOutbox.length > FB_OUTBOX_MAX) fbOutbox.splice(0, fbOutbox.length - FB_OUTBOX_MAX);
+  fbSaveOutbox();
+  fbScheduleFlush(60000);
 }
+function fbScheduleFlush(ms) {
+  clearTimeout(fbFlushT);
+  if (fbOutbox.length) fbFlushT = setTimeout(fbFlush, ms);
+}
+async function fbFlush() {
+  if (fbFlushing || !fbOutbox.length) return;
+  fbFlushing = true;
+  try {
+    while (fbOutbox.length) {
+      const it = fbOutbox[0];
+      const how = (await fbMail(it)) || (await fbStore(it));
+      if (!how) break;
+      fbOutbox.shift();
+      fbSaveOutbox();
+    }
+  } catch (e) { /* 다음에 다시 */ }
+  fbFlushing = false;
+  fbScheduleFlush(5 * 60000);
+}
+addEventListener('online', () => fbScheduleFlush(3000));
+fbScheduleFlush(8000);
 
 // =====================================================================
 //  시작
