@@ -339,6 +339,9 @@ a.buy { display: inline-flex; align-items: center; justify-content: center; text
 #hStage.many .hPet b { font-size: 13px; }
 #hStage.many .hPet span { font-size: 12px; }
 #hStage.many .hPet::before { top: 42px; width: 150px; height: 150px; margin: -75px 0 0 -75px; }
+.hPet .hcnt { position: absolute; top: 2px; left: 8px; font-style: normal; font-size: 13px; padding: 1px 7px; border-radius: 99px; background: rgba(0,0,0,.55); color: #fff; }
+.hEgg .eggN { position: absolute; left: 50%; bottom: -14px; transform: translateX(-50%); padding: 2px 12px; border-radius: 99px; background: rgba(0,0,0,.6); color: #fff; font-size: 18px; white-space: nowrap; }
+.hSum { display: flex; flex-wrap: wrap; gap: 4px 10px; justify-content: center; }
 @keyframes petIn { from { transform: scale(.2) translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes rays { to { transform: rotate(360deg); } }
 #hBtns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; max-width: 640px; }
@@ -1038,7 +1041,7 @@ const PETS = [
 const DEX_MS = [
   { n: 3, gems: 15, txt: '보석 15' },
   { n: 6, slot: 1, txt: '펫 칸 +1' },
-  { n: 10, gems: 40, x10: true, txt: '10개 뽑기 · 보석 40' },
+  { n: 10, gems: 40, x10: true, txt: '10·50개 뽑기 · 보석 40' },
   { n: 14, slot: 1, txt: '펫 칸 +1' },
   { n: 22, slot: 1, gems: 150, txt: '펫 칸 +1 · 보석 150' },
   { n: 30, slot: 1, gems: 300, txt: '펫 칸 +1 · 보석 300' },
@@ -6866,7 +6869,7 @@ function unequipPet(id, v) {
   afterPetChange();
   return true;
 }
-function fusePet(id, v) {
+function fusePet(id, v, quiet) {
   if (v >= 2 || petCount(id, v) < FUSE_N) return false;
   const inv = S.pets.inv[id];
   inv[v] -= FUSE_N; inv[v + 1]++;
@@ -6876,11 +6879,52 @@ function fusePet(id, v) {
   const ei = S.pets.eq.findIndex((e) => e[0] === id && e[1] === v);
   if (ei >= 0) S.pets.eq[ei] = [id, v + 1];
   while (petEquipped(id, v) > inv[v]) S.pets.eq.splice(S.pets.eq.findIndex((e) => e[0] === id && e[1] === v), 1);
+  if (quiet) return first ? 'new' : true;
   const p = petById(id);
   SFX.finish();
   toast(PVAR[v + 1].name + ' ' + p.name + ' 완성!' + (first ? ' · 도감 +' + (v === 0 ? 2 : 3) + '%' : ''), 'gold', 3200);
   afterPetChange();
   return true;
+}
+// 일괄 합성: 만들 수 있는 황금 → 무지개 수 미리 계산
+function fuseAllPlan() {
+  let g = 0, r = 0;
+  for (const p of PETS) {
+    const a = S.pets.inv[p.id];
+    if (!a) continue;
+    const ng = Math.floor((a[0] || 0) / FUSE_N), nr = Math.floor(((a[1] || 0) + ng) / FUSE_N);
+    g += ng; r += nr;
+  }
+  return { g, r };
+}
+// 모든 펫을 합성 (일반 5 → 황금, 황금 5 → 무지개). 장착한 펫은 합성된 펫으로 바뀌어요
+function fuseAll() {
+  let g = 0, r = 0, ng = 0, nr = 0;
+  for (const p of PETS) {
+    for (let v = 0; v < 2; v++) {
+      let res;
+      while ((res = fusePet(p.id, v, true))) {
+        if (v) { r++; if (res === 'new') nr++; } else { g++; if (res === 'new') ng++; }
+      }
+    }
+  }
+  if (!g && !r) { toast('합성할 수 있는 펫이 없어요 (같은 펫 ' + FUSE_N + '마리 필요)', 'bad'); return false; }
+  SFX.finish();
+  const parts = [];
+  if (g) parts.push('황금 ' + g + '마리');
+  if (r) parts.push('무지개 ' + r + '마리');
+  const dx = ng * 2 + nr * 3;
+  toast('일괄 합성 완료 · ' + parts.join(' · ') + (dx ? ' · 도감 +' + dx + '%' : ''), 'gold', 3600);
+  if (S.pets.eq.length < petSlots()) equipBest(false); else afterPetChange();
+  return true;
+}
+function fuseAllBtn(after) {
+  const pl = fuseAllPlan(), n = pl.g + pl.r;
+  const b = el('button', 'buy fuse', '일괄 합성' + (n ? ' (' + n + ')' : ''));
+  b.disabled = !n;
+  b.title = n ? '황금 ' + pl.g + ' · 무지개 ' + pl.r : '같은 펫 ' + FUSE_N + '마리가 모이면 합성할 수 있어요';
+  b.onclick = () => { if (fuseAll() && after) after(); };
+  return b;
 }
 function afterPetChange() {
   refreshPets();
@@ -6923,6 +6967,7 @@ function hatch(ei, n) {
 }
 
 // ---------- 부화 화면 ----------
+const HATCH_NS = [1, 3, 10, 50];
 let hatchOpen = false, hatchEgg = 0, hatchN = 1, hatchAuto = false, hatchBusy = false, hatchTimer = 0, hatchRes = null;
 function eggCss(E) { return '--c1:' + E.c1 + ';--c2:' + E.c2; }
 function openEgg(ei) {
@@ -6968,9 +7013,9 @@ function renderHatchBtns() {
   const E = EGGS[hatchEgg], box = $('hBtns');
   box.innerHTML = '';
   if (hatchBusy) { box.appendChild(el('div', 'hSkip', '눌러서 건너뛰기')); return; }
-  for (const n of [1, 3, 10]) {
-    const lock = n === 10 && !petX10();
-    const b = el('button', 'buy', (lock ? '10개 · 도감 10종에 열림' : n + '개 뽑기') + '<br>' + fmt(E.cost * n));
+  for (const n of HATCH_NS) {
+    const lock = n >= 10 && !petX10();
+    const b = el('button', 'buy', (lock ? n + '개 · 도감 10종에 열림' : n + '개 뽑기') + '<br>' + fmt(E.cost * n));
     b.disabled = lock || S.coins < E.cost * n;
     b.onclick = () => { hatchN = n; doHatch(); };
     box.appendChild(b);
@@ -6978,6 +7023,7 @@ function renderHatchBtns() {
   const au = el('button', 'buy alt' + (hatchAuto ? ' on' : ''), hatchAuto ? '자동 끄기' : '자동 뽑기<br><small>' + hatchN + '개씩</small>');
   au.onclick = () => { hatchAuto = !hatchAuto; renderHatchBtns(); if (hatchAuto) doHatch(); };
   box.appendChild(au);
+  if (fuseAllPlan().g) box.appendChild(fuseAllBtn(() => renderHatchBtns()));
   const c = el('button', 'buy alt', '닫기');
   c.onclick = closeHatch;
   box.appendChild(c);
@@ -6989,7 +7035,7 @@ function doHatch() {
   if (!res) {
     SFX.err();
     if (hatchAuto) { hatchAuto = false; toast('코인이 부족해서 자동 뽑기를 멈췄어요', 'bad'); }
-    else toast(hatchN >= 10 && !petX10() ? '도감 10종을 모으면 10개 뽑기가 열려요' : '코인이 부족해요', 'bad');
+    else toast(hatchN >= 10 && !petX10() ? '도감 10종을 모으면 ' + hatchN + '개 뽑기가 열려요' : '코인이 부족해요', 'bad');
     renderHatchBtns();
     return;
   }
@@ -6999,25 +7045,38 @@ function doHatch() {
   const hi = Math.max(...res.map((r) => r.p.rar));
   const st = $('hStage');
   st.className = res.length > 3 ? 'many' : '';
-  st.innerHTML = res.map((r) => '<div class="hEgg shake' + (r.p.rar >= 5 ? ' glow' : '') + (r.p.rar >= 6 ? ' aura' : '') + '" style="' + eggCss(E) + '"></div>').join('');
+  if (res.length > 10) { st.className = ''; st.innerHTML = '<div class="hEgg big shake' + (hi >= 5 ? ' glow' : '') + (hi >= 6 ? ' aura' : '') + '" style="' + eggCss(E) + '"><b class="eggN">x' + res.length + '</b></div>'; }
+  else st.innerHTML = res.map((r) => '<div class="hEgg shake' + (r.p.rar >= 5 ? ' glow' : '') + (r.p.rar >= 6 ? ' aura' : '') + '" style="' + eggCss(E) + '"></div>').join('');
   $('hSub').innerHTML = '부화 중…';
-  const fast = hatchAuto && hi < 5;
-  const wait = (fast ? 520 : 1000) + (hi >= 4 ? 450 : 0) + (hi >= 6 ? 1100 : 0);
+  // 자동 뽑기 중엔 처음 보는 전설 이상이 아니면 빠르게
+  const fast = hatchAuto && !autoStopHit(res);
+  const wait = fast ? 520 : 1000 + (hi >= 4 ? 450 : 0) + (hi >= 6 ? 1100 : 0);
   for (let k = 0; k < Math.floor(wait / 160); k++) tone(420 + k * 40, 0.05, 'triangle', 0.04, 0, k * 0.16);
   renderHatchBtns();
   hatchTimer = setTimeout(() => finishHatch(false), wait);
 }
+// 자동 뽑기는 도감에 없던 전설 이상 펫이 나올 때만 멈춰요 (이미 가진 펫이면 계속)
+function autoStopHit(res) { return res.some((r) => r.isNew && r.p.rar >= 5); }
 function finishHatch(quiet) {
   if (!hatchBusy) return;
   clearTimeout(hatchTimer);
   hatchBusy = false;
   const res = hatchRes || [];
   const hi = Math.max(0, ...res.map((r) => r.p.rar));
-  for (const r of res) if (r.isNew) toast('도감 등록 · ' + r.p.name + ' (' + RAR[r.p.rar].name + ')', 'good', 2600);
+  const news = res.filter((r) => r.isNew);
+  if (news.length > 3) toast('도감 등록 ' + news.length + '종 · ' + news.map((r) => r.p.name).join(', '), 'good', 4200);
+  else for (const r of news) toast('도감 등록 · ' + r.p.name + ' (' + RAR[r.p.rar].name + ')', 'good', 2600);
   if (quiet || !hatchOpen) return;
   const st = $('hStage');
-  st.innerHTML = res.map((r) => '<div class="hPet r' + r.p.rar + '" style="--rc:' + RAR[r.p.rar].css + '">' + petImg(r.p.id, 0) +
-    '<b>' + esc(r.p.name) + '</b><span class="' + (r.p.rar >= 6 ? 'rAura' : '') + '">' + RAR[r.p.rar].name + '</span>' + (r.isNew ? '<i class="new">NEW</i>' : '') + '</div>').join('');
+  let show = res.map((r) => ({ p: r.p, isNew: r.isNew, n: 1 }));
+  if (res.length > 10) {
+    const m = new Map();
+    for (const r of res) { const g = m.get(r.p.id); if (g) { g.n++; g.isNew = g.isNew || r.isNew; } else m.set(r.p.id, { p: r.p, isNew: r.isNew, n: 1 }); }
+    show = [...m.values()].sort((A, B) => (B.p.rar - A.p.rar) || (B.n - A.n));
+    st.className = 'many';
+  }
+  st.innerHTML = show.map((r) => '<div class="hPet r' + r.p.rar + '" style="--rc:' + RAR[r.p.rar].css + '">' + petImg(r.p.id, 0) +
+    '<b>' + esc(r.p.name) + '</b><span class="' + (r.p.rar >= 6 ? 'rAura' : '') + '">' + RAR[r.p.rar].name + '</span>' + (r.n > 1 ? '<i class="hcnt">x' + r.n + '</i>' : '') + (r.isNew ? '<i class="new">NEW</i>' : '') + '</div>').join('');
   if (hi >= 6) {
     const fl = $('hFlash'); fl.classList.remove('on', 'aura'); void fl.offsetWidth; fl.classList.add('on', 'aura');
     [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.22, 'triangle', 0.07, 0, i * 0.08));
@@ -7026,8 +7085,11 @@ function finishHatch(quiet) {
     const fl = $('hFlash'); fl.classList.remove('on', 'aura'); void fl.offsetWidth; fl.classList.add('on');
     SFX.finish();
   } else if (hi >= 2) SFX.star(); else SFX.cp();
-  $('hSub').innerHTML = res.length === 1 ? (res[0].p.what + ' · ' + petStatTxt(res[0].p, 0)) : '가진 코인 ' + fmt(S.coins);
-  if (hatchAuto && hi >= 5) { hatchAuto = false; toast('높은 등급이 나와서 자동 뽑기를 멈췄어요', 'gold'); }
+  if (res.length > 10) {
+    const cnt = RAR.map(() => 0); for (const r of res) cnt[r.p.rar]++;
+    $('hSub').innerHTML = '<div class="hSum">' + cnt.map((c, k) => c ? '<span class="' + (k >= 6 ? 'rAura' : '') + '" style="color:' + RAR[k].css + '">' + RAR[k].name + ' ' + c + '</span>' : '').join('') + '<span>· 가진 코인 ' + fmt(S.coins) + '</span></div>';
+  } else $('hSub').innerHTML = res.length === 1 ? (res[0].p.what + ' · ' + petStatTxt(res[0].p, 0)) : '가진 코인 ' + fmt(S.coins);
+  if (hatchAuto && autoStopHit(res)) { hatchAuto = false; toast('새 ' + RAR[Math.max(...res.filter((r) => r.isNew).map((r) => r.p.rar))].name + ' 펫이 나와서 자동 뽑기를 멈췄어요', 'gold'); }
   renderHatchBtns();
   renderHatchOdds();
   if (hatchAuto) hatchTimer = setTimeout(() => { if (hatchAuto && hatchOpen) doHatch(); }, 650);
@@ -7113,12 +7175,12 @@ function renderPetTab(body) {
     b1.onclick = () => { equipBest(true); renderShop(); };
     const b2 = el('button', 'buy alt', '모두 내려놓기');
     b2.onclick = () => { S.pets.eq = []; afterPetChange(); renderShop(); };
-    rb.append(b1, b2);
+    rb.append(b1, b2, fuseAllBtn(() => renderShop()));
     c.appendChild(rb);
     body.appendChild(c);
     const list = ownedPetList().sort((A, B) => (B.p.rar - A.p.rar) || (B.v - A.v) || petScore(B.p, B.v) - petScore(A.p, A.v));
     if (!list.length) { body.appendChild(el('div', 'card', '<p>아직 펫이 없어요. 펫 부화장에서 알을 깨 보세요. 쿠키 알은 1억 코인이에요.</p>')); return; }
-    body.appendChild(el('div', 'seg', '<span>같은 펫 ' + FUSE_N + '마리 → 황금 (효과 2배) · 황금 ' + FUSE_N + '마리 → 무지개 (4배)</span>'));
+    body.appendChild(el('div', 'seg', '<span>같은 펫 ' + FUSE_N + '마리 → 황금 (효과 2배) · 황금 ' + FUSE_N + '마리 → 무지개 (4배) · 일괄 합성은 되는 만큼 한 번에</span>'));
     const grid = el('div', 'petGrid');
     for (const { p, v, c: cnt } of list) {
       const eqn = petEquipped(p.id, v);
@@ -7914,7 +7976,7 @@ function boot() {
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
   addEventListener('pagehide', save);
   window.__gameStarted = true;
-  window.__game = { hatch, PETS, EGGS, petThumb, equipBest, fusePet, openEgg, closeHatch, enterHatch, buildPet, rollPet, get PS() { return PS; }, get DEX() { return DEX; }, get S() { return S; }, P, respawnAt, mine, petFol, renderer, scene, airJumpMax, phoenixBlast, refreshPets, syncPetModels, setShiftLock, toggleShiftLock, get shiftLock() { return shiftLock; }, updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
+  window.__game = { hatch, fuseAll, fuseAllPlan, PETS, EGGS, petThumb, equipBest, fusePet, openEgg, closeHatch, enterHatch, buildPet, rollPet, get PS() { return PS; }, get DEX() { return DEX; }, get S() { return S; }, P, respawnAt, mine, petFol, renderer, scene, airJumpMax, phoenixBlast, refreshPets, syncPetModels, setShiftLock, toggleShiftLock, get shiftLock() { return shiftLock; }, updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
   $('loading').classList.add('fade');
   setTimeout(() => $('loading').remove(), 600);
   requestAnimationFrame((t) => { last = t; lastWall = Date.now(); frame(t); });
