@@ -105,9 +105,9 @@ function buildTower(zid, O, dir, entryCol) {
   const s1 = makePlatform(zid, 'n', x, 0, z, { sx: 3, sz: 3, idx: 1 });
   C.pairs.push([s0, s1]);
   const [cx, cz] = W(30, 0);
-  const base = cylPlat(cx, 0, cz, 5, 1, themeMat(zid, 0), { zone: zid });
+  const base = cylPlat(cx, 0, cz, 5, 1, themeMat(zid, 0), { zone: zid, course: true });
   C.pairs.push([s1, base]);
-  const pillar = cylPlat(cx, 41.5, cz, 3, 42.5, mat(0xf5f0ff), { zone: zid });
+  const pillar = cylPlat(cx, 41.5, cz, 3, 42.5, mat(0xf5f0ff), { zone: zid, course: true });
   for (let y = 4; y < 41; y += 6) mesh(G.cyl, mat(0xd8ccff), cx, y, cz, 3.08, 0.5, 3.08, scene, false, true);
   let last = base;
   const RADIUS = 8, N = 33;

@@ -128,6 +128,7 @@ function makePlatform(zid, kind, x, top, z, o) {
   const h = o.h || (kind === 'finish' ? 2 : 0.8);
   let material;
   const flags = { zone: zid };
+  if (zid) flags.course = true; // 점프맵 발판 (여기선 달리기 금지)
   switch (kind) {
     case 'start': material = M.start; flags.start = zid; break;
     case 'cp': material = M.cp; flags.cp = true; break;
@@ -183,7 +184,7 @@ function decorateFinish(zid, c, fx, fz, lx, lz) {
   const h1 = mesh(G.torus, M.gold, tx + lx * 0.95, top + 2.1, tz + lz * 0.95, 0.4, 0.4, 0.4);
   const h2 = mesh(G.torus, M.gold, tx - lx * 0.95, top + 2.1, tz - lz * 0.95, 0.4, 0.4, 0.4);
   h1.rotation.y = h2.rotation.y = Math.atan2(lx, lz) + Math.PI / 2;
-  addCylCol(tx, top + 1.3, tz, 0.95, 1.3, { zone: zid });
+  addCylCol(tx, top + 1.3, tz, 0.95, 1.3, { zone: zid, course: true });
   const lab = makeLabel([{ t: zoneById(zid).course + ' 완주 지점', c: '#ffcf3f' }, '최고 기록 없음'], { sx: 4.2, pos: new THREE.Vector3(tx, top + 4.2, tz), accent: 'rgba(255,207,63,.7)' });
   courses[zid].trophyLabel = lab;
   // 귀환 포털
@@ -192,7 +193,7 @@ function decorateFinish(zid, c, fx, fz, lx, lz) {
   // 별 탑 (계단 블록)
   for (let k = 0; k < 3; k++) {
     const bx = cx - lx * (hs - 1.4) + fx * (k * 1.6 - 1.6), bz = cz - lz * (hs - 1.4) + fz * (k * 1.6 - 1.6);
-    boxPlat(bx, top + 1.2 * (k + 1), bz, 1.5, 1.2 * (k + 1), 1.5, themeMat(zid === 5 ? 5 : zid, k + 1), { zone: zid });
+    boxPlat(bx, top + 1.2 * (k + 1), bz, 1.5, 1.2 * (k + 1), 1.5, themeMat(zid === 5 ? 5 : zid, k + 1), { zone: zid, course: true });
     if (k === 2) addStar(bx, top + 1.2 * 3 + 1.5, bz, zid);
   }
 }

@@ -34,7 +34,8 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyH') goHome(true);
   if (e.code === 'KeyR') toCheckpoint();
   if (e.code === 'KeyM') toggleMute();
-  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') toggleShiftLock();
+  if (e.code === 'ShiftRight') toggleShiftLock();
+  if (e.code === 'ShiftLeft' && inJumpMap()) runBlockedNotice();
 });
 addEventListener('keyup', (e) => {
   keys.delete(e.code);
@@ -136,7 +137,7 @@ function setShiftLock(on, quiet) {
   syncPointerLock();
   if (!quiet) {
     const touch = document.body.classList.contains('touch');
-    toast(on ? (touch ? '시프트락 켜짐 · 캐릭터가 화면 방향을 봐요' : '시프트락 켜짐 · 마우스로 시점, 클릭으로 공격 · Shift로 끄기') : '시프트락 꺼짐');
+    toast(on ? (touch ? '시프트락 켜짐 · 캐릭터가 화면 방향을 봐요' : '시프트락 켜짐 · 마우스로 시점, 클릭으로 공격 · 오른쪽 Shift로 끄기') : '시프트락 꺼짐');
     tone(on ? 660 : 440, 0.07, 'triangle', 0.04);
   }
 }
@@ -165,6 +166,7 @@ pressable('btnMine', (e) => mine(e.clientX || null, e.clientY || null));
 pressable('btnAtk', () => { atkHeld = true; attack(); }, () => { atkHeld = false; });
 pressable('btnJump', () => { P.jumpBuf = 0.14; P.jumpHeld = true; }, () => { P.jumpHeld = false; });
 pressable('btnSL', () => toggleShiftLock());
+pressable('btnRun', () => toggleRunTouch());
 $('btnShop').onclick = () => { ensureAudio(); shopOpen ? closeShop() : openShop(); };
 $('btnDex').onclick = () => { ensureAudio(); togglePetPanel(); };
 $('btnHome').onclick = () => { ensureAudio(); goHome(true); };
@@ -455,6 +457,7 @@ function frame(now) {
   if (!window.__fxFreeze) updateFx(dt);
   updateGold(dt);
   updateTrail(dt);
+  updateRunFx(dt);
   updatePets(dt);
   updateParticles(dt);
   // 주기 작업
@@ -618,8 +621,8 @@ fbScheduleFlush(8000);
 // =====================================================================
 function welcome() {
   const ctl = IS_TOUCH
-    ? '<div class="ctl"><kbd>왼쪽 아래 드래그</kbd><span>이동</span><kbd>점프 버튼</kbd><span>점프</span><kbd>화면 드래그</kbd><span>시점 돌리기</span><kbd>채굴 버튼</kbd><span>코인 얻기</span><kbd>공격 버튼</kbd><span>무기 공격 (누르고 있으면 연속)</span><kbd>자물쇠 버튼</kbd><span>시프트락 (캐릭터가 화면 방향을 봐요)</span></div>'
-    : '<div class="ctl"><kbd>WASD</kbd><span>이동</span><kbd>Space</kbd><span>점프 (길게 누르면 더 높이)</span><kbd>드래그 · 휠</kbd><span>시점 돌리기 · 확대</span><kbd>크리스탈 클릭 · F</kbd><span>채굴해서 코인 얻기</span><kbd>클릭 · J (누르고 있기)</kbd><span>무기 공격</span><kbd>Shift</kbd><span>시프트락 (마우스 고정 · 조준점으로 공격)</span><kbd>B · H · R</kbd><span>상점 · 허브 · 체크포인트</span></div>';
+    ? '<div class="ctl"><kbd>왼쪽 아래 드래그</kbd><span>이동</span><kbd>점프 버튼</kbd><span>점프</span><kbd>화면 드래그</kbd><span>시점 돌리기</span><kbd>채굴 버튼</kbd><span>코인 얻기</span><kbd>공격 버튼</kbd><span>무기 공격 (누르고 있으면 연속)</span><kbd>달리기 버튼</kbd><span>달리기 켜고 끄기 (스태미너 소모 · 점프맵에선 못 써요)</span><kbd>자물쇠 버튼</kbd><span>시프트락 (캐릭터가 화면 방향을 봐요)</span></div>'
+    : '<div class="ctl"><kbd>WASD</kbd><span>이동</span><kbd>Space</kbd><span>점프 (길게 누르면 더 높이)</span><kbd>드래그 · 휠</kbd><span>시점 돌리기 · 확대</span><kbd>크리스탈 클릭 · F</kbd><span>채굴해서 코인 얻기</span><kbd>클릭 · J (누르고 있기)</kbd><span>무기 공격</span><kbd>왼쪽 Shift</kbd><span>달리기 (누르고 있기 · 스태미너 소모 · 점프맵에선 못 써요)</span><kbd>오른쪽 Shift</kbd><span>시프트락 (마우스 고정 · 조준점으로 공격)</span><kbd>B · H · R</kbd><span>상점 · 허브 · 체크포인트</span></div>';
   showModal(GAME_NAME, '<p>구름 위 섬에서 <span class="hl">크리스탈을 채굴</span>하고, <span class="ml">드로퍼</span>를 지어 자는 동안에도 코인을 모으세요.</p>' + ctl +
     '<p>다리를 놓아 섬의 <span class="hl">점프맵 코스</span>에 도전하고, 끝없이 이어지는 <span class="hl">하늘 탑</span>, 매일 바뀌는 <span class="hl">오늘의 도전</span>, 무기를 들고 떠나는 <span class="hl">사냥터와 보스 레이드</span>, 과자 펫을 모으는 <span class="hl">펫 부화장</span>까지 즐겨 보세요.</p>',
     [{ t: '시작하기', primary: true, fn: () => { S.welcomed = true; S.seenV2 = true; S.seenV3 = true; S.seenV4 = true; S.seenV5 = true; save(); requestPersist(); } }]);
@@ -634,7 +637,7 @@ function whatsNewV3() {
     [{ t: '사냥하러 가기', primary: true, fn: () => { S.seenV3 = true; save(); enterHunt(); } }, { t: '나중에', fn: () => { S.seenV3 = true; save(); } }]);
 }
 function whatsNewV4() {
-  const sl = IS_TOUCH ? '오른쪽 아래 자물쇠 버튼' : 'Shift 키 (Esc나 Shift로 풀기)';
+  const sl = IS_TOUCH ? '오른쪽 아래 자물쇠 버튼' : '오른쪽 Shift 키 (Esc나 오른쪽 Shift로 풀기)';
   showModal('시프트락 · 무기 밸런스 업데이트', '<div class="ctl">' +
     '<kbd>시프트락</kbd><span>' + sl + '. 캐릭터가 화면 방향을 보고, 가운데 조준점 쪽으로 공격해요</span>' +
     '<kbd>무기</kbd><span>상점 목록 순서대로 항상 더 세져요. 사냥꾼 활·번개 지팡이·서리 도끼·용의 대검이 강해지고, 용의 대검·별빛 활·차원 낫은 더 싸졌어요</span>' +

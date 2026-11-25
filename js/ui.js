@@ -311,7 +311,7 @@ function renderShop() {
     rg.value = S.sens;
     rg.oninput = () => { S.sens = +rg.value; };
     const touchUI = document.body.classList.contains('touch');
-    c1.appendChild(el('p', '', touchUI ? '시프트락: 오른쪽 아래 자물쇠 버튼. 캐릭터가 화면 방향을 보고, 가운데 조준점 쪽 적을 노려요.' : '시프트락: Shift 키. 마우스가 화면에 고정돼 움직이기만 해도 시점이 돌아가고, 클릭하면 조준점 쪽으로 공격해요. Shift나 Esc로 풀어요.'));
+    c1.appendChild(el('p', '', touchUI ? '시프트락: 오른쪽 아래 자물쇠 버튼. 캐릭터가 화면 방향을 보고, 가운데 조준점 쪽 적을 노려요.' : '시프트락: 오른쪽 Shift 키. 마우스가 화면에 고정돼 움직이기만 해도 시점이 돌아가고, 클릭하면 조준점 쪽으로 공격해요. 오른쪽 Shift나 Esc로 풀어요. 왼쪽 Shift는 달리기예요.'));
     const slb = el('button', 'buy alt wide', shiftLock ? '시프트락 끄기' : '시프트락 켜기');
     slb.onclick = () => { toggleShiftLock(); slb.textContent = shiftLock ? '시프트락 끄기' : '시프트락 켜기'; };
     c1.appendChild(slb);
@@ -359,7 +359,7 @@ function renderShop() {
     bf.onclick = openFeedback;
     c5.appendChild(bf);
     body.appendChild(c5);
-    body.appendChild(el('div', 'card', '<h4>단축키</h4><p>WASD/방향키 이동 · Space 점프 · 드래그 시점 · 휠 줌 · F 채굴 · B 상점 · P 펫 도감 · H 허브 · R 체크포인트 · M 소리</p>'));
+    body.appendChild(el('div', 'card', '<h4>단축키</h4><p>WASD/방향키 이동 · 왼쪽 Shift 달리기 · 오른쪽 Shift 시프트락 · Space 점프 · 드래그 시점 · 휠 줌 · F 채굴 · B 상점 · P 펫 도감 · H 허브 · R 체크포인트 · M 소리</p>'));
   }
   updateShop();
 }

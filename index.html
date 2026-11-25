@@ -44,10 +44,11 @@
     </div>
   </div>
 
-  <div id="hint" class="panel"><b>WASD</b> 이동 · <b>Space</b> 점프 · <b>드래그</b> 시점 · <b>F</b>/크리스탈 클릭 채굴 · <b>클릭</b>/<b>J</b> 공격 · <b>Shift</b> 시프트락 · <b>P</b> 펫 도감</div>
+  <div id="hint" class="panel"><b>WASD</b> 이동 · <b>Space</b> 점프 · <b>드래그</b> 시점 · <b>F</b>/크리스탈 클릭 채굴 · <b>클릭</b>/<b>J</b> 공격 · <b>왼쪽 Shift</b> 달리기 · <b>오른쪽 Shift</b> 시프트락 · <b>P</b> 펫 도감</div>
 
   <div id="hpBar" class="hidden"><span>HP</span><div class="hpTrack"><i id="hpFill"></i></div><b id="hpTxt">100 / 100</b></div>
   <div id="bossBar" class="panel hidden"><div class="bbHead"><span id="bossName">보스</span><b id="bossTime">180초</b></div><div class="bbTrack"><i id="bossHpFill"></i></div><div id="bossHpTxt"></div></div>
+  <div id="stamBar" aria-hidden="true"><div id="stamBox"><svg class="stIco" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z" fill="currentColor"/></svg><div class="stTrack"><i id="stamFill"></i></div></div></div>
   <div id="hurt"></div>
   <div id="xhair" aria-hidden="true"><svg viewBox="0 0 26 26"><path d="M13 2v6M13 18v6M2 13h6M18 13h6" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="4" stroke-linecap="round"/><path d="M13 2v6M13 18v6M2 13h6M18 13h6" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="13" cy="13" r="2.2" fill="#fff" stroke="rgba(0,0,0,.55)" stroke-width="1"/></svg></div>
 
@@ -60,6 +61,7 @@
     <div id="joyBase"><div id="joyKnob"></div></div>
     <button id="btnJump" aria-label="점프">점프</button>
     <button id="btnAtk" aria-label="공격">공격</button>
+    <button id="btnRun" aria-label="달리기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="14" cy="4.5" r="2"/><path d="M8 21l3-6 3 2v5"/><path d="M6 12l3-3 4 1 3 3h3"/><path d="M11 15l2-5"/></svg><small>달리기</small></button>
     <button id="btnSL" aria-label="시프트락" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><small>시프트락</small></button>
   </div>
   <button id="btnMine" aria-label="채굴하기"><span class="gem"></span><b>채굴</b><small id="mineVal">+1</small></button>
@@ -89,7 +91,7 @@
     }
   }, 20000);
 </script>
-<script>window.VER = '1.7';</script>
+<script>window.VER = '1.8';</script>
 <script type="module">
 // three.js를 불러온 뒤 게임 스크립트를 순서대로 실행해요.
 // (여러 파일이 같은 전역 공간을 쓰므로 순서가 중요해요. 맵 파일은 js/maps/ 아래)

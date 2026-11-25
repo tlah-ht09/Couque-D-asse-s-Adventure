@@ -101,6 +101,90 @@ function inputVec() {
   return [ix, iy];
 }
 
+// ---------- 달리기 · 스태미너 ----------
+// 왼쪽 Shift(터치는 달리기 버튼)로 1.5배 빨리 달려요. 스태미너는 연속 5초 분량이고,
+// 다 쓰면 5초 동안 안 차고, 남겨 두고 멈추면 1초 뒤부터 차요. 빈 상태에서 가득 차기까지 10초.
+// 점프맵(코스 발판 · 끝없는 탑 · 오늘의 도전)에서는 절대 달릴 수 없어요.
+const RUN_MULT = 1.5, STAM_MAX = 5, STAM_FILL = 10, STAM_WAIT = 1, STAM_WAIT_EMPTY = 5;
+const RUN = { stam: STAM_MAX, wait: 0, empty: false, on: false, touch: false, lock: false, ground: null, told: 0, fullT: 0, dust: 0, fov: 0 };
+function runHeld() { return keys.has('ShiftLeft') || RUN.touch; }
+function inJumpMap() {
+  const m = playerMap();
+  if (m === 'tower' || m === 'daily' || P.trackOn) return true;
+  const g = P.ground || RUN.ground;
+  return !!(g && g.course);
+}
+function runBlockedNotice() {
+  if (gameTime - RUN.told < 2.5 && RUN.told) return;
+  RUN.told = gameTime || 0.001;
+  toast('점프맵에서는 달릴 수 없어요', 'bad', 1600);
+}
+function setRunTouch(on) {
+  RUN.touch = !!on;
+  const b = $('btnRun');
+  if (b) { b.classList.toggle('on', RUN.touch); b.setAttribute('aria-pressed', RUN.touch ? 'true' : 'false'); }
+}
+function toggleRunTouch() {
+  if (!RUN.touch && inJumpMap()) { runBlockedNotice(); return; }
+  setRunTouch(!RUN.touch);
+}
+function staminaEmpty() {
+  const box = $('stamBox');
+  if (box) { box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake'); }
+  tone(220, 0.22, 'sawtooth', 0.05, -90);
+}
+function updateStamina(h, hasInput, L) {
+  if (P.ground) RUN.ground = P.ground;
+  if (!runHeld()) RUN.lock = false;
+  const want = runHeld() && hasInput && !L && P.knock <= 0;
+  const blocked = inJumpMap();
+  if (blocked && RUN.touch) { setRunTouch(false); runBlockedNotice(); }
+  RUN.on = want && !blocked && !RUN.empty && !RUN.lock && RUN.stam > 0;
+  if (RUN.on) {
+    RUN.stam -= h;
+    RUN.wait = STAM_WAIT;
+    if (RUN.stam <= 0) {
+      // 모두 소진: 5초 동안 회복 안 함, 키를 뗐다 다시 눌러야 다시 달려요
+      RUN.stam = 0; RUN.empty = true; RUN.lock = true; RUN.wait = STAM_WAIT_EMPTY;
+      if (RUN.touch) setRunTouch(false);
+      staminaEmpty();
+    }
+  } else if (RUN.wait > 0) {
+    RUN.wait -= h;
+  } else {
+    RUN.empty = false;
+    if (RUN.stam < STAM_MAX) RUN.stam = Math.min(STAM_MAX, RUN.stam + (STAM_MAX / STAM_FILL) * h);
+  }
+}
+// 화면 하단 스태미너 바 · 달릴 때 먼지 · 살짝 넓어지는 시야
+function updateRunFx(dt) {
+  const bar = $('stamBar'), box = $('stamBox'), fill = $('stamFill');
+  const full = RUN.stam >= STAM_MAX && !RUN.on;
+  RUN.fullT = full ? RUN.fullT + dt : 0;
+  const show = !full || RUN.fullT < 0.7;
+  bar.classList.toggle('show', show);
+  fill.style.width = (RUN.stam / STAM_MAX * 100).toFixed(1) + '%';
+  box.classList.toggle('run', RUN.on);
+  box.classList.toggle('tired', RUN.empty);
+  box.classList.toggle('low', !RUN.empty && RUN.stam < STAM_MAX * 0.25);
+  // 시야
+  const fovT = RUN.on ? 1 : 0;
+  const nf = RUN.fov + (fovT - RUN.fov) * (1 - Math.exp(-6 * dt));
+  if (Math.abs(nf - RUN.fov) > 0.0005 || (fovT === 0 && RUN.fov !== 0 && nf < 0.002)) {
+    RUN.fov = nf < 0.002 && fovT === 0 ? 0 : nf;
+    camera.fov = 62 + RUN.fov * 6;
+    camera.updateProjectionMatrix();
+  }
+  // 발밑 먼지
+  if (RUN.on && P.grounded && Math.hypot(P.vx, P.vz) > SPEED) {
+    RUN.dust -= dt;
+    if (RUN.dust <= 0) {
+      RUN.dust = 0.07;
+      burst(P.x + rand(-0.25, 0.25), P.y + 0.08, P.z + rand(-0.25, 0.25), [0xffffff, 0xe8e0d0], 2, 1.2, 0.1, 0.4, 0.5, 0.35);
+    }
+  }
+}
+
 // ---------- 충돌 ----------
 function overlapXZ(c, x, z, r) {
   if (c.t === 'b') {
@@ -177,9 +261,10 @@ function updatePlayer(h) {
   const [ix, iy] = L ? [0, 0] : inputVec();
   const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
   const wx = rx * ix + fx * iy, wz = rz * ix + fz * iy;
-  const spd = SPEED * speedMult();
+  const hasInput = !!(ix || iy) && !L;
+  updateStamina(h, hasInput, L);
+  const spd = SPEED * speedMult() * (RUN.on ? RUN_MULT : 1);
   const onIce = P.grounded && P.ground && P.ground.ice;
-  const hasInput = (ix || iy) && !L;
   const turning = hasInput && (wx * P.vx + wz * P.vz) < 0;
   let rate;
   if (L) rate = 0;

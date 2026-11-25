@@ -129,6 +129,35 @@ body.touch .ibtn kbd { display: none; }
 #xhair { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; pointer-events: none; display: none; }
 body.sl #xhair { display: block; }
 body.sl:not(.plock) #c { cursor: crosshair; }
+/* 스태미너 바 (달리기) */
+#stamBar { position: absolute; left: 50%; bottom: max(128px, calc(env(safe-area-inset-bottom) + 128px)); transform: translateX(-50%); pointer-events: none; opacity: 0; transition: opacity .25s; }
+#stamBar.show { opacity: 1; }
+#stamBox { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 99px; background: rgba(16,22,44,.78); border: 1px solid var(--line); }
+#stamBox .stIco { width: 16px; height: 16px; color: #ffd23f; flex: none; }
+.stTrack { width: 220px; height: 10px; border-radius: 99px; background: rgba(255,255,255,.14); overflow: hidden; }
+.stTrack i { display: block; height: 100%; width: 100%; border-radius: 99px; background: linear-gradient(90deg, #3ee6a5, #b8f28b); }
+#stamBox.run .stTrack i { background: linear-gradient(90deg, #ffb547, #ffe08a); }
+#stamBox.low .stTrack i { background: linear-gradient(90deg, #ff7a45, #ffb547); }
+#stamBox.tired { border-color: rgba(255,90,95,.7); }
+#stamBox.tired .stIco { color: #ff5a5f; }
+#stamBox.tired .stTrack { background: rgba(255,90,95,.22); }
+#stamBox.shake { animation: stShake .5s ease-out; }
+@keyframes stShake {
+  0% { transform: translateX(0); background: rgba(200,30,40,.92); box-shadow: 0 0 18px 4px rgba(255,60,60,.75); border-color: #ff5a5f; }
+  15% { transform: translateX(-9px); }
+  30% { transform: translateX(8px); }
+  45% { transform: translateX(-6px); }
+  60% { transform: translateX(4px); }
+  75% { transform: translateX(-2px); }
+  100% { transform: translateX(0); background: rgba(16,22,44,.78); box-shadow: 0 0 0 0 rgba(255,60,60,0); }
+}
+#btnRun { position: absolute; right: max(252px, calc(env(safe-area-inset-right) + 252px)); bottom: max(30px, env(safe-area-inset-bottom)); width: 68px; height: 68px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); background: rgba(16,22,44,.6); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; pointer-events: auto; touch-action: none; transition: transform .06s, background .15s; }
+#btnRun svg { width: 26px; height: 26px; }
+#btnRun small { font-size: 10px; line-height: 1; }
+#btnRun.on { background: radial-gradient(circle at 40% 30%, #ffe08a, #ffb547 60%, #e07b1a); }
+#btnRun.press { transform: scale(.93); }
+body.touch #stamBar { bottom: max(222px, calc(env(safe-area-inset-bottom) + 222px)); }
+body.touch .stTrack { width: 150px; }
 body.touch #hpBar { bottom: max(250px, calc(env(safe-area-inset-bottom) + 250px)); }
 #zoneBanner { position: absolute; left: 50%; top: 30%; transform: translate(-50%, -50%) scale(.96); text-align: center; pointer-events: none; opacity: 0; transition: opacity .35s, transform .35s; padding: 14px 30px 16px; border-radius: 22px; background: rgba(16,22,44,.78); border: 1px solid var(--line); box-shadow: 0 12px 40px rgba(5,10,30,.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: calc(100vw - 32px); }
 #zoneBanner.show { transform: translate(-50%, -50%) scale(1); }
