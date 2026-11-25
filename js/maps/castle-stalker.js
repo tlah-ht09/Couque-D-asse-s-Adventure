@@ -9,7 +9,7 @@
 // =====================================================================
 const STK = {
   R: 120, SPEED: 9 * 1.25, WANDER: 3.2, CATCH: 1.1, SEEN_NEED: 1.5, SEEN_WIN: 2.5,
-  LINGER_SEEN: 8, LINGER: 3, HOWL_CD: 8, HOWL_VOL: 0.06, TRACK: 1.3, BODY_R: 0.45, STEP_RANGE: 45,
+  LINGER_SEEN: 8, LINGER: 3, HOWL_CD: 8, HOWL_VOL: 0.06, SCARE_VOL: 0.16, TRACK: 1.3, BODY_R: 0.45, STEP_RANGE: 45,
   pDist: 0, beatT: 0, vig: null,
   mons: [], time: 0, seenLog: [], seenNow: false, hide: null, kill: null, grace: 0, wasIn: false, pf: -1, hint: null, flash: null, doors: null,
 };
@@ -279,11 +279,11 @@ function stkPlayerStep(run) { stkThump(run ? 520 : 420, run ? 0.05 : 0.035, 0.09
 function stkBeat(vol) { stkTone(58, 0.11, 'sine', vol, -12); stkTone(52, 0.13, 'sine', vol * 0.75, -12, 0.17); }
 // 발견했을 때 괴성: 갈라진 목소리가 치솟았다 떨어져요 (너무 크지 않게, 멀수록 조금 작게)
 let stkNoiseBuf = null;
-function stkHowl(dist) {
+function stkHowl(dist, big) {
   if (!stkAudioOk()) return;
   try {
-    const vol = STK.HOWL_VOL * (0.55 + 0.45 * Math.max(0, 1 - dist / 60));
-    const t0 = actx.currentTime, dur = 1.3;
+    const vol = big ? STK.SCARE_VOL : STK.HOWL_VOL * (0.55 + 0.45 * Math.max(0, 1 - dist / 60));
+    const t0 = actx.currentTime, dur = big ? 1.2 : 1.3, pm = big ? 1.35 : 1;
     const out = actx.createGain();
     out.gain.setValueAtTime(0.0001, t0); out.gain.exponentialRampToValueAtTime(vol, t0 + 0.06);
     out.gain.setValueAtTime(vol, t0 + 0.5); out.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
@@ -293,7 +293,7 @@ function stkHowl(dist) {
     for (const [f, type, v] of [[330, 'sawtooth', 0.45], [349, 'sawtooth', 0.35], [495, 'square', 0.14], [160, 'sawtooth', 0.3]]) {
       const o = actx.createOscillator(), g = actx.createGain();
       o.type = type;
-      o.frequency.setValueAtTime(f * 0.7, t0); o.frequency.exponentialRampToValueAtTime(f * 1.25, t0 + 0.2); o.frequency.exponentialRampToValueAtTime(f * 0.75, t0 + dur);
+      o.frequency.setValueAtTime(f * 0.7 * pm, t0); o.frequency.exponentialRampToValueAtTime(f * 1.25 * pm, t0 + (big ? 0.08 : 0.2)); o.frequency.exponentialRampToValueAtTime(f * 0.75 * pm, t0 + dur);
       lg.connect(o.frequency); g.gain.value = v; o.connect(g); g.connect(lp);
       o.start(t0); o.stop(t0 + dur + 0.05);
     }
@@ -304,29 +304,40 @@ function stkHowl(dist) {
     lfo.start(t0); lfo.stop(t0 + dur + 0.05); ns.start(t0); ns.stop(t0 + dur);
   } catch (e) { /* 무시 */ }
 }
-function stkScream() {   // 잡혔을 때
-  for (let k = 0; k < 5; k++) stkTone(300 + Math.random() * 500, 0.7, k % 2 ? 'sawtooth' : 'square', 0.04, 900 + Math.random() * 600, k * 0.02);
-  stkTone(60, 0.8, 'sawtooth', 0.07, -30);
+function stkScream() {   // 잡혔을 때: 괴물이 얼굴 앞에서 비명
+  stkHowl(0, true);
+  stkTone(70, 1.0, 'sawtooth', 0.08, -35);
+  stkThump(300, 0.3, 0.25);
 }
-
 // ---------- 잡기 ----------
 function stkStartKill(m) {
   if (STK.kill) return;
-  STK.kill = { m, t: 0 };
+  STK.kill = { m, t: 0, yaw: Math.atan2(-(m.x - P.x), -(m.z - P.z)) };
   stkScream(); cam.shake = 0.6;
 }
+// 잡히면: 괴물 얼굴이 화면 한가운데로 확 달려들고 비명 -> 암전 -> 리스폰
 function stkUpdateKill(dt) {
   const k = STK.kill; k.t += dt;
-  const m = k.m, hx = m.x, hz = m.z;
-  // 괴물 얼굴을 억지로 보게 해요
-  cam.yaw = Math.atan2(-(hx - P.x), -(hz - P.z));
-  cam.pitch = -0.25; cam.shake = Math.max(cam.shake, 0.15);
-  m.g.userData.head.rotation.z = Math.sin(k.t * 60) * 0.15;
-  if (k.t > 0.75) STK.flash.style.opacity = '1';
-  if (k.t > 1.0) {
+  const m = k.m, g = m.g, u = g.userData;
+  cam.yaw = k.yaw; cam.pitch = 0; cam.shake = Math.max(cam.shake, 0.22);
+  const fx = -Math.sin(k.yaw), fz = -Math.cos(k.yaw);
+  const d = 1.8 - 0.85 * Math.min(1, k.t / 0.12);                  // 1.8 m -> 0.95 m 로 확 붙어요
+  const sc = 1 + 0.35 * Math.min(1, k.t / 0.12);
+  const cp = camera.position;
+  g.visible = true;
+  g.rotation.y = k.yaw + Math.PI;                                   // 얼굴이 카메라를 봐요
+  g.position.set(cp.x + fx * d, cp.y - (u.head.position.y) * 1 + (Math.random() - 0.5) * 0.03, cp.z + fz * d);
+  u.head.scale.setScalar(sc);
+  u.head.rotation.set((Math.random() - 0.5) * 0.12, 0, Math.sin(k.t * 55) * 0.12);
+  u.mouth.scale.y = 2.3 + Math.sin(k.t * 40) * 0.3;                 // 입을 쩍 벌려요
+  u.torso.rotation.x = 0.1;
+  u.armL.rotation.x = u.armR.rotation.x = -1.35;                   // 발톱 달린 팔이 화면 양옆으로
+  u.armL.rotation.z = 0.35; u.armR.rotation.z = -0.35;
+  if (k.t > 0.95) STK.flash.style.opacity = '1';
+  if (k.t > 1.2) {
     STK.kill = null;
     if (STK.hide) stkExitWard();
-    m.g.userData.head.rotation.z = 0;
+    u.head.scale.setScalar(1); u.head.rotation.set(0, 0, 0); u.armL.rotation.z = u.armR.rotation.z = 0;
     die(); stkReset();
     setTimeout(() => { STK.flash.style.opacity = '0'; }, 250);
   }
