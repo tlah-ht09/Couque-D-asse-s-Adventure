@@ -880,6 +880,8 @@ function updatePets(dt) {
   }
   updateHatchery(dt, t);
   updateCastle(dt);
+  if (typeof updateCastleIn === 'function') updateCastleIn(dt);
+  if (typeof updateCastleDecor === 'function') updateCastleDecor(dt);
 }
 
 // ---------- 썸네일 (게임 렌더러로 작은 화면에 그려서 저장. 두 번째 WebGL을 만들지 않아요) ----------

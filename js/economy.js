@@ -204,7 +204,7 @@ function defaultState() {
     courses: {}, medals: {},
     tower: { best: 0 },
     daily: { key: '', best: 0, streak: 0, lastKey: '', bestStreak: 0, clears: 0 },
-    castle: { lv: 0, tool: 1, first: [false, false, false, false, false, false, false, false], doneT: [0, 0, 0, 0, 0, 0, 0, 0] },
+    castle: { lv: 0 },
     seenCastle: false,
     ach: {}, goldCaught: 0,
     combat: { owned: ['stick'], equip: 'stick', mastery: 0, vital: 0, kills: 0, bossKills: 0 }, raid: {},

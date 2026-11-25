@@ -4,8 +4,8 @@
 //  월드를 맵(구역)별 그룹으로 나눠서, 플레이어가 있는 맵만 그려요.
 //  숨긴 맵은 그리기·그림자·행렬 갱신을 모두 건너뛰어요.
 // =====================================================================
-const MAP_IDS = ['main', 'sky', 'tower', 'daily', 'hatch', 'hunt', 'castle'];
-const MAP_NAMES = { main: '허브 · 1~4구역', sky: '별빛 섬', tower: '끝없는 하늘 탑', daily: '오늘의 도전', hatch: '펫 부화장', hunt: '사냥터 · 레이드', castle: '쿠키성 월드' };
+const MAP_IDS = ['main', 'sky', 'tower', 'daily', 'hatch', 'hunt', 'castle', 'castleIn'];
+const MAP_NAMES = { main: '허브 · 1~4구역', sky: '별빛 섬', tower: '끝없는 하늘 탑', daily: '오늘의 도전', hatch: '펫 부화장', hunt: '사냥터 · 레이드', castle: '쿠키성 월드', castleIn: '쿠키성 내부' };
 const mapGroups = {};
 for (const id of MAP_IDS) {
   const g = new THREE.Group();
@@ -18,6 +18,7 @@ let mapVisKey = '';
 
 // 좌표가 어느 맵에 속하는지 (섬들이 서로 멀리 떨어져 있어서 위치로 갈라져요)
 function mapAt(x, y, z) {
+  if (x < -330 && z < -330 && y > 250) return 'castleIn';
   if (y > 55 && x > 40 && x < 150 && z < -40 && z > -350) return 'sky';
   if (y < 55 && x > 80 && z < -80) return 'castle';
   if (Math.abs(x - TOWER_C.x) < 50 && Math.abs(z - TOWER_C.z) < 50) return 'tower';

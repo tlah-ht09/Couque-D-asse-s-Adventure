@@ -57,13 +57,11 @@ canvas.addEventListener('pointerdown', (e) => {
     base.style.left = (e.clientX - 65) + 'px'; base.style.top = (e.clientY - 65) + 'px'; base.style.bottom = 'auto';
     base.style.opacity = 1;
   } else {
-    washPointer(e, 'down'); // 방 청소 분사
     ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, drag: false, btn: e.button, t: performance.now(), touch: e.pointerType === 'touch' });
   }
   try { canvas.setPointerCapture(e.pointerId); } catch (err) { /* 무시 */ }
 });
 canvas.addEventListener('pointermove', (e) => {
-  washPointer(e, 'move');
   if (e.pointerId === joy.id) {
     let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
     const d = Math.hypot(dx, dy), R = 55;
@@ -85,14 +83,13 @@ canvas.addEventListener('pointermove', (e) => {
   const dx = e.clientX - p.x, dy = e.clientY - p.y;
   p.x = e.clientX; p.y = e.clientY;
   if (!p.drag && Math.hypot(p.x - p.sx, p.y - p.sy) > 6) p.drag = true;
-  if (p.drag && (!P.inRoom || p.btn === 1 || p.btn === 2 || (p.touch && e.pointerId !== wash.pid))) {
+  if (p.drag) {
     const k = (e.pointerType === 'touch' ? 0.0065 : 0.005) * S.sens;
     cam.yaw -= dx * k;
     cam.pitch = clamp(cam.pitch + dy * k * 0.8, -0.15, 1.25);
   }
 });
 function endPtr(e) {
-  washPointer(e, 'up');
   if (e.pointerId === joy.id) {
     joy.id = null; joy.active = false; joy.x = joy.y = 0;
     $('joyKnob').style.transform = '';
@@ -103,7 +100,7 @@ function endPtr(e) {
   const p = ptrs.get(e.pointerId);
   if (!p) return;
   ptrs.delete(e.pointerId);
-  if (!P.inRoom && !p.drag && e.type === 'pointerup' && (p.btn === 0 || e.pointerType === 'touch')) {
+  if (!p.drag && e.type === 'pointerup' && (p.btn === 0 || e.pointerType === 'touch')) {
     const lk = plocked(), sx = lk ? innerWidth / 2 : e.clientX, sy = lk ? innerHeight / 2 : e.clientY; // 마우스가 고정돼 있으면 조준점 기준
     if (!tryClickCrystal(sx, sy)) attack();
   }
@@ -457,7 +454,6 @@ function frame(now) {
   updateCamera(dt);
   updateWorldFx(dt);
   if (!modalOpen && !hatchOpen && !frozen) updateCombat(dt);
-  if (P.inRoom) updateWash(dt);
   if (!window.__fxFreeze) updateFx(dt);
   updateGold(dt);
   updateTrail(dt);
@@ -701,7 +697,7 @@ function boot() {
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') save(); });
   addEventListener('pagehide', save);
   window.__gameStarted = true;
-  window.__game = { openWashShop, enterRoom, exitRoom, WASH_TOOLS, washDebugClean, enterCastle, tryBuyCastle, CASTLE_STAGES, THREE, camera, mapGroups, mapAt, get curMap() { return curMap; }, hatch, fuseAll, fuseAllPlan, PETS, EGGS, petThumb, equipBest, fusePet, openEgg, closeHatch, enterHatch, buildPet, rollPet, get PS() { return PS; }, get DEX() { return DEX; }, get S() { return S; }, P, respawnAt, mine, petFol, renderer, scene, airJumpMax, phoenixBlast, refreshPets, syncPetModels, setShiftLock, toggleShiftLock, get shiftLock() { return shiftLock; }, updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
+  window.__game = { enterCastle, tryBuyCastle, CASTLE_STAGES, THREE, camera, mapGroups, mapAt, get curMap() { return curMap; }, hatch, fuseAll, fuseAllPlan, PETS, EGGS, petThumb, equipBest, fusePet, openEgg, closeHatch, enterHatch, buildPet, rollPet, get PS() { return PS; }, get DEX() { return DEX; }, get S() { return S; }, P, respawnAt, mine, petFol, renderer, scene, airJumpMax, phoenixBlast, refreshPets, syncPetModels, setShiftLock, toggleShiftLock, get shiftLock() { return shiftLock; }, updateFx, fxAttack, get fxCount() { return fxList.length; }, forceAction: (t) => raid && startAction(raid.boss, t), updateCombat, monsters, attack, startRaid, endRaid, BOSSES, WEAPONS, enterHunt, equipWeapon, buyWeapon, openRaidMenu, get raid() { return raid; }, hurtPlayer, maxHp, weaponDps, checkPairs, makeDailyTrack, disposeBuild, TT, get DT() { return DT; }, trackSpec, ensureFloors, trackPairs, enterTower, enterDaily, spawnGold, catchGold, awaken, buyRupg, buyBoost, buySkin, checkAch, questAt, rebirthGain, genFloor, physicsStep, overlapXZ, sweepers, movers, fades, get gameTime() { return gameTime; }, S, P, colliders, courses, stars, checkCourses, buyGen, buyZone, buyUpg, buyLaunch, mine, goHome, respawnAt, launchTo, cam, totalCps, doRebirth, keys, earn, get state() { return S; } };
   $('loading').classList.add('fade');
   setTimeout(() => $('loading').remove(), 600);
   requestAnimationFrame((t) => { last = t; lastWall = Date.now(); frame(t); });

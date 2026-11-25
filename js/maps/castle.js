@@ -2,24 +2,24 @@
 // 쿠키성 월드: 코인으로 성을 8단계까지 쌓는 섬
 const CASTLE_C = { x: 110, z: -110 }, CASTLE_R = 18;
 const CASTLE_STAGES = [
-  { name: '쿠키 터 다지기', cost: 1e6 },
-  { name: '비스킷 성벽', cost: 1e9 },
+  { name: '쿠키 터 다지기', cost: 1e8 },
+  { name: '비스킷 성벽', cost: 1e11 },
   { name: '웨이퍼 망루', cost: 1e12 },
   { name: '초코 본관', cost: 1e15 },
-  { name: '사탕 첨탑', cost: 1e18 },
-  { name: '젤리 분수 정원', cost: 1e22 },
-  { name: '황금 캐러멜 지붕', cost: 1e27 },
-  { name: '쿠키 왕관', cost: 1e32 },
+  { name: '사탕 첨탑', cost: 1e16 },
+  { name: '젤리 분수 정원', cost: 5e19 },
+  { name: '황금 캐러멜 지붕', cost: 1e20 },
+  { name: '쿠키 왕관', cost: 1e24 },
 ];
 const castleGroups = [];   // 단계별 그룹 (인덱스 = 단계 - 1)
 const castleGhosts = [];   // 아직 안 지은 단계를 보여 주는 반투명 설계도
 const GHOST_NEXT = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.38, depthWrite: false });
 const GHOST_FAR = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.14, depthWrite: false });
 const castleCols = { found: null, walls: [], keep: null, door: null }; // 단계에 따라 켜고 끄는 충돌체
-let castleBoard = null, castleBuyT = 0, castleBoardT = 0;
+let castleBoard = null, castleBuyT = 0, castleBoardT = 0, castleDoorT = 0;
 
-// 영구 수입 배율 (성 단계 + 방별 첫 청소 보너스)
-function castleMult() { return (1 + 0.04 * S.castle.lv) * (1 + 0.03 * S.castle.first.filter(Boolean).length); }
+// 영구 수입 배율 (성 단계마다 +4%, 환생해도 유지)
+function castleMult() { return 1 + 0.04 * S.castle.lv; }
 
 function buildCastle() {
   const X = CASTLE_C.x, Z = CASTLE_C.z;
@@ -111,7 +111,6 @@ function buildCastle() {
     scene.add(gh);
     castleGhosts.push(gh);
   }
-  buildCastleInterior();
   refreshCastle();
 }
 
@@ -130,7 +129,6 @@ function refreshCastle() {
   castleCols.keep.solid = lv >= 4;
   castleCols.door.solid = lv >= 1;
   updateCastleBoard();
-  if (typeof refreshCastleInterior === 'function') refreshCastleInterior();
 }
 function updateCastleBoard() {
   if (!castleBoard) return;
@@ -157,14 +155,20 @@ function tryBuyCastle() {
   save();
 }
 function updateCastle(dt) {
-  if (P.x > 125 && P.z < -135) updateLobby(dt);
-  else if (!S.seenCastle && !modalOpen && Math.hypot(P.x - CASTLE_C.x, P.z - CASTLE_C.z) < 40) {
+  if (!S.seenCastle && !modalOpen && Math.hypot(P.x - CASTLE_C.x, P.z - CASTLE_C.z) < 40) {
     S.seenCastle = true; save();
-    showModal('쿠키성 월드', '코인으로 성을 8단계까지 쌓아요. 단계마다 영구 수입 +4%, 성 안 방이 하나씩 열려요.<br>방에서 클릭을 누르고 있으면 물을 뿌려 청소해요 (오른쪽 드래그로 시점 회전).<br>방을 처음 청소하면 보석과 영구 수입 +3%.');
+    showModal('쿠키성 월드', '코인으로 성을 8단계까지 쌓아요. 단계마다 영구 수입 +4% (환생해도 유지). 성을 완성하면 문이 열려요.');
   }
   if (Math.hypot(P.x - CASTLE_C.x, P.z - CASTLE_C.z) > 40) return;
   castleBoardT -= dt;
   if (castleBoardT <= 0) { castleBoardT = 0.5; updateCastleBoard(); }
+}
+function castleDoorTouch() {
+  const now = performance.now();
+  if (now - castleDoorT < 1500) return;
+  castleDoorT = now;
+  if (S.castle.lv < 8) { toast('성을 완성하면 열려요'); return; }
+  if (typeof enterCastleInterior === 'function') enterCastleInterior();
 }
 function enterCastle() {
   P.course = null; leaveTracks(); hideTimer();
