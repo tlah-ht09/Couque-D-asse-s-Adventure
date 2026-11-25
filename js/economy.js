@@ -204,6 +204,8 @@ function defaultState() {
     courses: {}, medals: {},
     tower: { best: 0 },
     daily: { key: '', best: 0, streak: 0, lastKey: '', bestStreak: 0, clears: 0 },
+    castle: { lv: 0, tool: 1, first: [false, false, false, false, false, false, false, false], doneT: [0, 0, 0, 0, 0, 0, 0, 0] },
+    seenCastle: false,
     ach: {}, goldCaught: 0,
     combat: { owned: ['stick'], equip: 'stick', mastery: 0, vital: 0, kills: 0, bossKills: 0 }, raid: {},
     skin: { shirt: 'blue', hat: 'cap', trail: 'none', owned: ['blue', 'cap', 'none'] },
@@ -233,7 +235,7 @@ function boostActive() { return Date.now() < (S.boostEnd || 0); }
 function permMult() {
   return (1 + courseBonus()) * (1 + 0.04 * starCount()) * (1 + 0.05 * S.rlv) * (1 + 0.25 * (S.rup.mult || 0)) *
     (1 + 0.02 * achTiers()) * (1 + 0.03 * medalCount()) * (1 + 0.01 * Math.min(S.tower.best, 500)) *
-    (1 + PS.coin) * dexMult();
+    (1 + PS.coin) * dexMult() * castleMult();
 }
 function globalMult() { return permMult() * (boostActive() ? 2 : 1) * buffMult('income'); }
 function genIncome(i) { return GENS[i].inc * S.gens[i] * genMult(i); }

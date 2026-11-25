@@ -27,6 +27,10 @@ function onLand(c) {
   if (c.towerCont) { continueTower(); return; }
   if (c.huntGate) { enterHunt(); return; }
   if (c.hatchGate) { enterHatch(); return; }
+  if (c.castleGate) { enterCastle(); return; }
+  if (c.castleBuild) { tryBuyCastle(); return; }
+  if (c.castleDoor) { castleDoorTouch(); return; }
+  if (c.castleRoom || c.castleLobby || c.castleExit || c.washShop) { castleInteriorTouch(c); return; }
   if (c.eggPad) { openEgg(c.eggPad - 1); return; }
   if (c.weaponShop) { openShop('war'); return; }
   if (c.bossAltar && !raid) { openRaidMenu(c.bossAltar); return; }
@@ -37,10 +41,11 @@ function onLand(c) {
     else tryBuyLaunch();
   }
   if (c.island) {
-    const zid = c.hub ? 0 : c.towerIsland ? 't' : c.dailyIsland ? 'd' : c.huntCamp ? 'h' : c.hatchIsland ? 'p' : c.field ? 'f' + c.field : c.raidIsland ? 'r' : c.zone;
+    const zid = c.hub ? 0 : c.towerIsland ? 't' : c.dailyIsland ? 'd' : c.huntCamp ? 'h' : c.hatchIsland ? 'p' : c.castleIsland ? 'c' : c.field ? 'f' + c.field : c.raidIsland ? 'r' : c.zone;
     if (zid !== P.zoneShown) {
       if (zid === 0 && P.zoneShown != null) banner('돌아왔어요', '허브 섬', '드로퍼를 늘리고 다음 섬을 열어 보세요', 2200);
       else if (zid === 't') banner('최고 ' + S.tower.best + '층', '끝없는 하늘 탑', '오를수록 보석과 영구 수입이 늘어나요', 2600);
+      else if (zid === 'c') banner('성 ' + S.castle.lv + '/8단계', '쿠키성 월드', '코인으로 성을 쌓고 성 안을 청소해요', 2400);
       else if (zid === 'h') banner('회복의 샘 · 무기 상점', '사냥터 캠프', '서쪽은 사냥 들판, 남쪽은 보스 레이드', 2400);
       else if (typeof zid === 'string' && zid[0] === 'f') { const F = FIELDS[+zid.slice(1) - 1], lv = F.kinds.map((k) => MONSTERS[k].lvl); banner('몬스터 Lv.' + Math.min(...lv) + (Math.max(...lv) > Math.min(...lv) ? '~' + Math.max(...lv) : ''), F.name, F.kinds.filter((v, i, a) => a.indexOf(v) === i).map((k) => MONSTERS[k].name).join(' · ') + ' · 금관 쓴 엘리트 몬스터는 보석을 줘요', 2600); }
       else if (zid === 'p') banner('도감 ' + DEX.n + '/' + PETS.length, '펫 부화장', '알 앞 발판을 밟으면 뽑기를 할 수 있어요', 2600);
@@ -459,6 +464,7 @@ function syncAll() {
   for (const D of droppers) syncDropper(D, false);
   for (const z of ZONES) if (z.dir) syncBridge(z);
   syncLaunch();
+  refreshCastle();
   for (const st of stars) { st.taken = S.stars.includes(st.id); st.mesh.visible = st.glow.visible = !st.taken; }
   for (const z of ZONES) updateTrophy(z.id);
   if (crystalLabel) crystalLabel.sp.visible = S.clicks < 25;
@@ -651,6 +657,10 @@ function applyState(o) {
     S.combat.equip = S.combat.owned.includes(C.equip) ? C.equip : 'stick';
     for (const k of ['mastery', 'vital', 'kills', 'bossKills']) S.combat[k] = Math.floor(num(C[k]));
   }
+  if (o.castle && typeof o.castle === 'object') {
+    const K = o.castle, a8 = (a, f) => Array.from({ length: 8 }, (_, i) => f(Array.isArray(a) ? a[i] : 0));
+    S.castle = { lv: clamp(Math.floor(num(K.lv)), 0, 8), tool: clamp(Math.floor(num(K.tool, 1)), 1, 8), first: a8(K.first, (v) => !!v), doneT: a8(K.doneT, (v) => Math.max(0, Math.floor(num(v)))) };
+  }
   if (o.raid) for (const b of BOSSES) S.raid[b.id] = Math.floor(num(o.raid[b.id]));
   if (o.skin && typeof o.skin === 'object') {
     const owned = Array.isArray(o.skin.owned) ? o.skin.owned.filter((x) => typeof x === 'string') : [];
@@ -664,6 +674,7 @@ function applyState(o) {
   S.seenV3 = !!o.seenV3;
   S.seenV4 = !!o.seenV4;
   S.seenV5 = !!o.seenV5;
+  S.seenCastle = !!o.seenCastle;
   if (o.pets && typeof o.pets === 'object') {
     const Q = o.pets;
     if (Q.inv && typeof Q.inv === 'object') for (const p of PETS) { const a = Q.inv[p.id]; if (Array.isArray(a)) { const c = [0, 1, 2].map((k) => Math.floor(num(a[k]))); if (c[0] + c[1] + c[2] > 0) S.pets.inv[p.id] = c; } }

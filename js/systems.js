@@ -54,7 +54,7 @@ function luckLv() { return S.rup.luck || 0; }
 function spawnGold() {
   const cand = [];
   for (const c of colliders) {
-    if (!c.solid || c.kill || c.move || c.fade || c.bounce || c.pad != null || c.bridgePad || c.launchPad || c.portal || c.towerGate || c.dailyGate || c.towerCont || c.pedestal || c.eggPad || c.hatchGate || c.eggStand) continue;
+    if (!c.solid || c.kill || c.move || c.fade || c.bounce || c.pad != null || c.bridgePad || c.launchPad || c.portal || c.towerGate || c.dailyGate || c.towerCont || c.pedestal || c.eggPad || c.hatchGate || c.castleGate || c.castleBuild || c.castleDoor || c.castleRoom || c.castleLobby || c.castleExit || c.washShop || c.eggStand) continue;
     if (c.t === 'b' && (c.hx < 1 || c.hz < 1)) continue;
     if (c.t === 'c' && c.r < 1.1) continue;
     const dx = c.x - P.x, dz = c.z - P.z, d = Math.hypot(dx, dz);
