@@ -84,14 +84,24 @@
 <div id="loading"><div><h1>쿠크다스의 모험</h1><p id="loadMsg">섬을 띄우는 중…</p></div></div>
 
 <script>
+  window.__bootErr = '';
+  window.addEventListener('error', function (e) {
+    if (window.__gameStarted) return;
+    if (e.target && e.target !== window && e.target.tagName !== 'SCRIPT') return; // 폰트·이미지 실패는 무시
+    var f = (e.filename || (e.target && e.target.src) || '').split('/').pop().split('?')[0];
+    window.__bootErr = (e.message || '파일 로드 실패') + (f ? ' (' + f + (e.lineno ? ':' + e.lineno : '') + ')' : '');
+    var m = document.getElementById('loadMsg');
+    if (m) m.textContent = '시작 중 오류: ' + window.__bootErr + ' — 강력 새로고침(Cmd+Shift+R) 해 보세요.';
+  }, true);
   setTimeout(function () {
+    if (window.__bootErr) return;
     if (!window.__gameStarted) {
       var m = document.getElementById('loadMsg');
       if (m) m.textContent = '3D 엔진을 불러오지 못했어요. 인터넷 연결을 확인한 뒤 새로고침해 주세요.';
     }
   }, 20000);
 </script>
-<script>window.VER = '1.9';</script>
+<script>window.VER = '2.0';</script>
 <script type="module">
 // three.js를 불러온 뒤 게임 스크립트를 순서대로 실행해요.
 // (여러 파일이 같은 전역 공간을 쓰므로 순서가 중요해요. 맵 파일은 js/maps/ 아래)
