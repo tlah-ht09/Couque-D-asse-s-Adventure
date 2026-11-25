@@ -1,12 +1,12 @@
 'use strict';
 // =====================================================================
 //  쿠키성 내부 (맵 'castleIn'): 8층 미로 성
-//  - 층마다 40x40m, 10x10칸(칸 4m), 층 높이 6m
+//  - 층마다 80x80m, 10x10칸(칸 8m), 층 높이 6m
 //  - 미로는 시드 고정(재귀 백트래커 + 일부 벽 제거 + 큰 방), 계단은 층마다 다른 곳
 //  - 위치: CI 에서 멀리 떨어진 허공 (mapAt 이 castleIn 으로 판정)
 // =====================================================================
 const CI = { x: -400, y: 300, z: -400 };
-const CI_FLOOR_H = 6, CI_CELL = 4, CI_N = 10, CI_FLOORS = 8, CI_WALL_T = 0.4, CI_SLAB_T = 0.4;
+const CI_FLOOR_H = 6, CI_CELL = 8, CI_N = 10, CI_FLOORS = 8, CI_WALL_T = 0.4, CI_SLAB_T = 0.4;
 const CI_STEP_H = 0.4, CI_STEP_N = 15;          // 계단: 15단 x 0.4m = 6m, 단 깊이 0.8m (3칸 = 12m)
 const CI_ENTRANCE = { i: 4, j: 9 };             // 1층 도착 칸 (남쪽 가장자리)
 const CI_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -163,7 +163,16 @@ function ciGenFloor(f, plans) {
   ciShuffle(dead, rng);
   other.sort((a, b) => b.w - a.w);
   const wantW = 3 + (rng() < 0.5 ? 1 : 0);
-  const wardrobes = [...dead, ...other].slice(0, wantW).map(({ i, j, fx, fz }) => ({ i, j, fx, fz }));
+  const cand = [...dead, ...other], wardrobes = [];
+  for (let minD = 5; minD >= 2 && wardrobes.length < wantW; minD--) {
+    for (const c of cand) {
+      if (wardrobes.length >= wantW) break;
+      if (wardrobes.includes(c)) continue;
+      if (wardrobes.every((o) => Math.abs(o.i - c.i) + Math.abs(o.j - c.j) >= minD)) wardrobes.push(c);
+    }
+  }
+  for (let k = 0; k < wardrobes.length; k++) { const { i, j, fx, fz } = wardrobes[k]; wardrobes[k] = { i, j, fx, fz }; }
+  if (wardrobes.length < wantW) for (const c of cand) { if (wardrobes.length >= wantW) break; if (!wardrobes.some((o) => o.i === c.i && o.j === c.j)) wardrobes.push({ i: c.i, j: c.j, fx: c.fx, fz: c.fz }); }
   // 합친 벽 구간 (칸 좌표). axis 'x' = x 방향으로 뻗은 벽(z=line), 'z' = z 방향 벽(x=line)
   const segs = [];
   for (let j = 0; j <= N; j++) { let s = -1; for (let i = 0; i <= N; i++) { const on = i < N && H[j][i]; if (on && s < 0) s = i; if (!on && s >= 0) { segs.push({ axis: 'x', line: j, a: s, b: i }); s = -1; } } }
@@ -220,6 +229,38 @@ function ciInst(parent, list, material) {
       wallList.push({ axis: s.axis, cx, cz, len, thick: T, h: CI_FLOOR_H, y: y0 });
     }
     ciInst(group, wallBoxes, wallMat);
+    // --- 벽 테두리: 어두운 걸레받이 + 크림색 윗덮개 + 끝/모서리 기둥 + 바닥 격자선 ---
+    {
+      const dk = wallCol.clone().multiplyScalar(0.45).getHex(), pk = wallCol.clone().multiplyScalar(0.3).getHex();
+      const baseB = [], capB = [], postB = [], gridB = [];
+      const BH = 0.4, CH = 0.25, PT = T + 0.2;
+      for (const w of wallBoxes) {
+        baseB.push({ x: w.x, y: y0 + BH / 2, z: w.z, sx: w.sx + (w.sx > w.sz ? 0 : 0.2), sy: BH, sz: w.sz + (w.sx > w.sz ? 0.2 : 0) });
+        // 걸레받이는 양옆으로 0.1 더 두껍게(긴 방향은 그대로)
+        const bb = baseB[baseB.length - 1]; if (w.sx > w.sz) bb.sz = w.sz + 0.2; else bb.sx = w.sx + 0.2;
+        capB.push({ x: w.x, y: y0 + CI_FLOOR_H - CH / 2, z: w.z, sx: w.sx > w.sz ? w.sx : w.sx + 0.16, sy: CH, sz: w.sx > w.sz ? w.sz + 0.16 : w.sz });
+      }
+      const pts = new Set();
+      for (const sg of gen.segs) {
+        const ends = sg.axis === 'x' ? [[sg.a, sg.line], [sg.b, sg.line]] : [[sg.line, sg.a], [sg.line, sg.b]];
+        for (const [gi, gj] of ends) pts.add(gj * (CI_N + 1) + gi);
+      }
+      for (const k of pts) {
+        const gi = k % (CI_N + 1), gj = Math.floor(k / (CI_N + 1));
+        postB.push({ x: ciX0 + gi * CI_CELL, y: y0 + CI_FLOOR_H / 2, z: ciZ0 + gj * CI_CELL, sx: PT, sy: CI_FLOOR_H, sz: PT });
+      }
+      // 바닥 격자선(칸 경계, 얇은 어두운 선)
+      const GL = 0.06;
+      for (let g = 1; g < CI_N; g++) {
+        gridB.push({ x: ciX0 + CI_N * CI_CELL / 2, y: y0 + 0.012, z: ciZ0 + g * CI_CELL, sx: CI_N * CI_CELL, sy: 0.024, sz: GL });
+        gridB.push({ x: ciX0 + g * CI_CELL, y: y0 + 0.012, z: ciZ0 + CI_N * CI_CELL / 2, sx: GL, sy: 0.024, sz: CI_N * CI_CELL });
+      }
+      const dm = mat(dk, { emissive: dk, emissiveIntensity: 0.25 });
+      ciInst(group, baseB, dm);
+      ciInst(group, capB, mat(0xfff3d6, { emissive: 0xfff3d6, emissiveIntensity: 0.45 }));
+      ciInst(group, postB, mat(pk, { emissive: pk, emissiveIntensity: 0.2 }));
+      ciInst(group, gridB, dm);
+    }
     // --- 바닥판 (윗층 계단 구멍 비움) + 맨 위층 지붕판 ---
     const holes = new Set(gen.voidCells.map((c) => ciKey(c.i, c.j)));
     const slabBoxes = [];
@@ -294,7 +335,7 @@ function ciInst(parent, list, material) {
     // --- 1층 출구 패드 ---
     let arrival = CASTLE_IN.cellCenter(gen.A.i, gen.A.j);
     if (f === 0) {
-      const px = arrival.x, pz = arrival.z + 1.15;
+      const px = arrival.x, pz = arrival.z + 1.15 * CI_CELL / 4;
       const pm = mesh(G.cyl, mat(0x5ef2c0, { emissive: 0x2fd9a0, emissiveIntensity: 1.0 }), px, y0 + 0.075, pz, 0.6, 0.15, 0.6, group, false, false);
       mesh(G.torus, mat(0xffffff, { emissive: 0xffffff, emissiveIntensity: 0.8 }), px, y0 + 0.2, pz, 0.62, 0.62, 0.62, group, false, false).rotation.x = Math.PI / 2;
       const pc = addCylCol(px, y0 + 0.075, pz, 0.6, 0.075, { castleInExit: true });

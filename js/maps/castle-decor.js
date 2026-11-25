@@ -37,6 +37,7 @@ function updateCastleDecor(dt) {
   const canvasM = mat(0xffffff, { emissive: 0x555555, emissiveIntensity: 0.4 });
   const tmpC = new THREE.Color();
   const key = (i, j) => j * CI_N + i;
+  const SC = CI_CELL / 4;   // 칸 4m 기준 치수 배율
   const cellOf = (x, z) => ({ i: Math.floor((x - ciX0) / CI_CELL), j: Math.floor((z - ciZ0) / CI_CELL) });
 
   for (const fl of CASTLE_IN.floors) {
@@ -92,13 +93,13 @@ function updateCastleDecor(dt) {
       const c = path[k];
       if (blocked.has(key(c.i, c.j)) && key(c.i, c.j) !== goalKey) continue;
       const cc = CASTLE_IN.cellCenter(c.i, c.j);
-      add('ctrim', 'box', cc.x, y0 + 0.015, cc.z, 1.9, 0.03, 1.9);
-      add('carpet', 'box', cc.x, y0 + 0.02, cc.z, 1.6, 0.04, 1.6);
+      add('ctrim', 'box', cc.x, y0 + 0.015, cc.z, 1.9 * SC, 0.03, 1.9 * SC);
+      add('carpet', 'box', cc.x, y0 + 0.02, cc.z, 1.6 * SC, 0.04, 1.6 * SC);
       const n = path[k + 1];
       if (n && !(blocked.has(key(n.i, n.j)) && key(n.i, n.j) !== goalKey)) {
         const nc = CASTLE_IN.cellCenter(n.i, n.j), mx = (cc.x + nc.x) / 2, mz = (cc.z + nc.z) / 2, h = cc.z === nc.z;
-        add('ctrim', 'box', mx, y0 + 0.015, mz, h ? CI_CELL : 1.9, 0.03, h ? 1.9 : CI_CELL);
-        add('carpet', 'box', mx, y0 + 0.02, mz, h ? CI_CELL : 1.6, 0.04, h ? 1.6 : CI_CELL);
+        add('ctrim', 'box', mx, y0 + 0.015, mz, h ? CI_CELL : 1.9 * SC, 0.03, h ? 1.9 * SC : CI_CELL);
+        add('carpet', 'box', mx, y0 + 0.02, mz, h ? CI_CELL : 1.6 * SC, 0.04, h ? 1.6 * SC : CI_CELL);
       }
     }
 
@@ -188,23 +189,23 @@ function updateCastleDecor(dt) {
     for (const h of fl.halls) {
       if (h.throne) continue;
       if (h.w < 2 || h.h < 2) continue;
-      for (const [px, pz] of [[h.x0 + 1.4, h.z0 + 1.4], [h.x1 - 1.4, h.z0 + 1.4], [h.x0 + 1.4, h.z1 - 1.4], [h.x1 - 1.4, h.z1 - 1.4]]) if (free(px, pz, pblocked)) pillar(px, pz);
+      for (const [px, pz] of [[h.x0 + 1.4 * SC, h.z0 + 1.4 * SC], [h.x1 - 1.4 * SC, h.z0 + 1.4 * SC], [h.x0 + 1.4 * SC, h.z1 - 1.4 * SC], [h.x1 - 1.4 * SC, h.z1 - 1.4 * SC]]) if (free(px, pz, pblocked)) pillar(px, pz);
       const offs = h.w >= 4 ? [-CI_CELL, CI_CELL] : [0];
       for (const o of offs) {
         const x = h.cx + o, z = h.cz;
-        if ([[0.9, 0.9], [-0.9, 0.9], [0.9, -0.9], [-0.9, -0.9]].every(([dx, dz]) => free(x + dx, z + dz, pblocked))) chandelier(x, z, 0.9, 6);
+        if ([[0.9, 0.9], [-0.9, 0.9], [0.9, -0.9], [-0.9, -0.9]].every(([dx, dz]) => free(x + dx * SC, z + dz * SC, pblocked))) chandelier(x, z, 0.9 * SC, 6);
       }
       let ok = true;
       for (let i = h.i; i < h.i + h.w && ok; i++) for (let j = h.j; j < h.j + h.h; j++) if (blocked.has(key(i, j))) { ok = false; break; }
       if (ok) {
-        add('ctrim', 'box', h.cx, y0 + 0.015, h.cz, h.x1 - h.x0 - 2.1, 0.03, h.z1 - h.z0 - 2.1);
-        add('carpet', 'box', h.cx, y0 + 0.02, h.cz, h.x1 - h.x0 - 2.5, 0.04, h.z1 - h.z0 - 2.5);
+        add('ctrim', 'box', h.cx, y0 + 0.015, h.cz, h.x1 - h.x0 - 2.1 * SC, 0.03, h.z1 - h.z0 - 2.1 * SC);
+        add('carpet', 'box', h.cx, y0 + 0.02, h.cz, h.x1 - h.x0 - 2.5 * SC, 0.04, h.z1 - h.z0 - 2.5 * SC);
       }
     }
 
     // ---- 옷장 꾸미기 ----
     for (const w of fl.wardrobes) {
-      const cc = w.cell, fx = w.fx, fz = w.fz, lx = -fz, lz = fx, uc = -1.15;
+      const cc = w.cell, fx = w.fx, fz = w.fz, lx = -fz, lz = fx, uc = -(CI_CELL / 2 - CI_WALL_T / 2 - 0.05 - 0.6);
       const P2 = (u, v) => ({ x: cc.x + fx * u + lx * v, z: cc.z + fz * u + lz * v });
       const S2 = (a, b) => (fx !== 0 ? [a, b] : [b, a]);
       let p = P2(uc, 0), z = S2(1.4, 1.8);
@@ -278,9 +279,9 @@ function updateCastleDecor(dt) {
       for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; add('gold', 'cone', p.x + Math.cos(a) * 0.26, dT + 1.3, p.z + Math.sin(a) * 0.26, 0.07, 0.25, 0.07); }
       add('ruby', 'ico', p.x, dT + 1.2, p.z, 0.1, 0.1, 0.1);
       // 기둥 두 줄
-      for (let a = -Au + 4; a < Au - 7; a += 4) for (const sg of [1, -1]) { const q = W(a, sg * (Bv - 6)); pillar(q.x, q.z); }
+      for (let a = -Au + 4; a < Au - 7; a += CI_CELL) for (const sg of [1, -1]) { const q = W(a, sg * (Bv / 2)); pillar(q.x, q.z); }
       // 샹들리에
-      for (const [a, r, n] of [[-7, 1.0, 8], [0, 2.0, 14], [7, 1.0, 8]]) { const q = W(a, 0); chandelier(q.x, q.z, r, n); }
+      for (const [a, r, n] of [[-7 * SC, 1.0 * SC, 8], [0, 2.0 * SC, 14], [7 * SC, 1.0 * SC, 8]]) { const q = W(a, 0); chandelier(q.x, q.z, r, n); }
       // 둘레 벽: 큰 배너 / 횃불 / 뒤쪽 커튼 은신처
       const sides = [
         { axis: 'z', line: TH.x0, nx: 1, nz: 0, start: TH.z0, n: TH.h },
@@ -300,8 +301,8 @@ function updateCastleDecor(dt) {
           const s = { w, side, t };
           const px = sd.axis === 'x' ? t : sd.line, pz = sd.axis === 'x' ? sd.line : t;
           const aa = (px - TH.cx) * u.x + (pz - TH.cz) * u.z, bb = (px - TH.cx) * vv.x + (pz - TH.cz) * vv.z;
-          if (aa > Au - 1 && Math.abs(bb) < 3) continue;
-          if (aa > Au - 1 && Math.abs(Math.abs(bb) - 10) < 0.1 && curt < 2 && half) { curtain(s); curt++; continue; }
+          if (aa > Au - 1 && Math.abs(bb) < 3 * SC) continue;
+          if (aa > Au - 1 && Math.abs(Math.abs(bb) - (Bv - CI_CELL / 2)) < 0.1 && curt < 2 && half) { curtain(s); curt++; continue; }
           if (half) banner(s, 1.6); else if (k > 0 && k < sd.n) torch(s);
         }
       }
