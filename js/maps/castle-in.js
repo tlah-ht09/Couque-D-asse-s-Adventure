@@ -368,8 +368,27 @@ function castleInAttach() {
 }
 function updateCastleIn(dt) {
   castleInAttach();
-  if (!inCastleIn(P.x, P.y, P.z)) return;
+  if (!inCastleIn(P.x, P.y, P.z)) { ciWindT = 1.5; return; }
   castleInSetFloor(CASTLE_IN.playerFloor());
+  ciWindT -= dt;
+  if (ciWindT <= 0) { ciWindT = 5 + Math.random() * 7; ciWindGust(); }
+}
+// 성 안 배경음: 간간히 스치는 바람 소리만
+let ciWindT = 1.5, ciWindBuf = null;
+function ciWindGust() {
+  if (muted || !actx || actx.state !== 'running') return;
+  try {
+    if (!ciWindBuf) { const n = actx.sampleRate * 2; ciWindBuf = actx.createBuffer(1, n, actx.sampleRate); const d = ciWindBuf.getChannelData(0); let b = 0; for (let i = 0; i < n; i++) { b = b * 0.97 + (Math.random() * 2 - 1) * 0.03; d[i] = b * 6; } }
+    const t0 = actx.currentTime, dur = 2.5 + Math.random() * 2.5, f0 = 250 + Math.random() * 250;
+    const src = actx.createBufferSource(); src.buffer = ciWindBuf; src.loop = true;
+    const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.7;
+    f.frequency.setValueAtTime(f0, t0); f.frequency.linearRampToValueAtTime(f0 * 2.2, t0 + dur * 0.45); f.frequency.linearRampToValueAtTime(f0 * 0.8, t0 + dur);
+    const g = actx.createGain(), v = 0.05 + Math.random() * 0.04;
+    g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    const pan = actx.createStereoPanner ? actx.createStereoPanner() : null;
+    if (pan) { pan.pan.setValueAtTime(Math.random() * 1.6 - 0.8, t0); src.connect(f); f.connect(g); g.connect(pan); pan.connect(actx.destination); } else { src.connect(f); f.connect(g); g.connect(actx.destination); }
+    src.start(t0, Math.random() * 1.5); src.stop(t0 + dur + 0.05);
+  } catch (e) { /* 무시 */ }
 }
 function enterCastleInterior() {
   castleInAttach();

@@ -313,6 +313,7 @@ function ensureAudio() {
 }
 function tone(freq, dur = 0.1, type = 'sine', vol = 0.12, slide = 0, delay = 0) {
   if (muted || !actx || actx.state !== 'running') return;
+  if (typeof inCastleIn === 'function' && typeof P !== 'undefined' && inCastleIn(P.x, P.y, P.z)) return;   // 성 안: 효과음 끔
   try {
     const t0 = actx.currentTime + delay;
     const o = actx.createOscillator(), g = actx.createGain();

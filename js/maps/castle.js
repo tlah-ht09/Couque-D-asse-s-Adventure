@@ -2,14 +2,14 @@
 // 쿠키성 월드: 코인으로 성을 8단계까지 쌓는 섬
 const CASTLE_C = { x: 110, z: -110 }, CASTLE_R = 18;
 const CASTLE_STAGES = [
-  { name: '쿠키 터 다지기', cost: 1e8 },
-  { name: '비스킷 성벽', cost: 1e11 },
-  { name: '웨이퍼 망루', cost: 1e12 },
-  { name: '초코 본관', cost: 1e15 },
-  { name: '사탕 첨탑', cost: 1e16 },
-  { name: '젤리 분수 정원', cost: 5e19 },
-  { name: '황금 캐러멜 지붕', cost: 1e20 },
-  { name: '쿠키 왕관', cost: 1e24 },
+  { name: '쿠키 터 다지기', cost: 1e6 },
+  { name: '비스킷 성벽', cost: 1e9 },
+  { name: '웨이퍼 망루', cost: 1e10 },
+  { name: '초코 본관', cost: 1e13 },
+  { name: '사탕 첨탑', cost: 1e14 },
+  { name: '젤리 분수 정원', cost: 5e17 },
+  { name: '황금 캐러멜 지붕', cost: 1e18 },
+  { name: '쿠키 왕관', cost: 1e22 },
 ];
 const castleGroups = [];   // 단계별 그룹 (인덱스 = 단계 - 1)
 const castleGhosts = [];   // 아직 안 지은 단계를 보여 주는 반투명 설계도

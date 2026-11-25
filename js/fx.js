@@ -409,6 +409,7 @@ function fireball(x, y, z, r, col = 0xffa040, dur = 0.35) {
 let noiseBuf = null;
 function noise(dur, f0, f1, q = 1, vol = 0.1, type = 'bandpass', delay = 0) {
   if (muted || !actx || actx.state !== 'running') return;
+  if (typeof inCastleIn === 'function' && typeof P !== 'undefined' && inCastleIn(P.x, P.y, P.z)) return;   // 성 안: 효과음 끔
   try {
     if (!noiseBuf) { noiseBuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
     const t0 = actx.currentTime + delay;
