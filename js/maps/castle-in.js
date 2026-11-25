@@ -88,14 +88,14 @@ function ciGenFloor(f, plans) {
     vis.add(ciKey(nb[0].i, nb[0].j));
     stack.push(nb[0]);
   }
-  // 벽을 많이 허물어서 갈래길 만들기 (남은 안쪽 벽의 40%)
+  // 벽을 많이 허물어서 갈래길 만들기 (남은 안쪽 벽의 20%)
   const walls = [];
   for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
     const a = { i, j };
     for (const b of [{ i: i + 1, j }, { i, j: j + 1 }]) if (allowed(a, b) && getWall(a, b)) walls.push([a, b]);
   }
   ciShuffle(walls, rng);
-  const rm = Math.round(walls.length * 0.4);
+  const rm = Math.round(walls.length * 0.2);
   for (let k = 0; k < rm; k++) setWall(walls[k][0], walls[k][1], false);
   // 큰 방
   const halls = [];
@@ -183,7 +183,8 @@ function ciGenFloor(f, plans) {
 
 // ===================== 여기부터 three.js 부분 =====================
 const castleHides = [];   // 옷장 안 서 있는 자리 {floor, x, y, z, fx, fz}
-const CI_WALL_COL = [0xf2c6a0, 0xe8a0b4, 0xa8d8c0, 0xf5e08a, 0xb4c4f0, 0xd8b0e8, 0xf0a878, 0xe6c15a];
+const CI_WALL_COL = [0xf2d2b0, 0xe6a0a8, 0xa8dcc8, 0xf5e0a0, 0xa8b8e0, 0xd8b4f0, 0xf4b0a8, 0xe6c15a];
+const CI_THEME = ['현관 홀', '식당', '부엌', '거실', '서재', '놀이방', '침실', '왕의 방'];
 const CASTLE_IN = { CI, FLOOR_H: CI_FLOOR_H, CELL: CI_CELL, N: CI_N, floors: [], plans: null, attached: false, shown: -1, exitPad: null };
 const ciX0 = CI.x - CI_N * CI_CELL / 2, ciZ0 = CI.z - CI_N * CI_CELL / 2;
 CASTLE_IN.cellCenter = (i, j) => ({ x: ciX0 + (i + 0.5) * CI_CELL, z: ciZ0 + (j + 0.5) * CI_CELL });
@@ -344,7 +345,7 @@ function ciInst(parent, list, material) {
     }
     // --- 데이터 ---
     const halls = gen.halls.map((h) => ({ i: h.i, j: h.j, w: h.w, h: h.h, throne: !!h.throne, x0: ciX0 + h.i * CI_CELL, z0: ciZ0 + h.j * CI_CELL, x1: ciX0 + (h.i + h.w) * CI_CELL, z1: ciZ0 + (h.j + h.h) * CI_CELL, cx: ciX0 + (h.i + h.w / 2) * CI_CELL, cz: ciZ0 + (h.j + h.h / 2) * CI_CELL }));
-    CASTLE_IN.floors.push({ index: f, group, y: y0, top: y0 + CI_FLOOR_H, wallColor: CI_WALL_COL[f], H: gen.H, V: gen.V, getWall: gen.getWall, walls: wallList, halls, stair, voidCells: gen.voidCells, wardrobes, arrival: { i: gen.A.i, j: gen.A.j, x: arrival.x, z: arrival.z }, cols });
+    CASTLE_IN.floors.push({ index: f, theme: CI_THEME[f], group, y: y0, top: y0 + CI_FLOOR_H, wallColor: CI_WALL_COL[f], H: gen.H, V: gen.V, getWall: gen.getWall, walls: wallList, halls, stair, voidCells: gen.voidCells, wardrobes, arrival: { i: gen.A.i, j: gen.A.j, x: arrival.x, z: arrival.z }, cols });
   }
   CASTLE_IN.setFloor = castleInSetFloor;
   castleInSetFloor(0, true);

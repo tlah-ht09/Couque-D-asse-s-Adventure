@@ -15,6 +15,10 @@ const CD_THEMES = [
   { name: 'lemon',   carpet: 0xf2d230, trim: 0xfff6b0, banner: 0xffe066 },
   { name: 'royal',   carpet: 0xb3122e, trim: 0xf5c542, banner: 0xc01838 },
 ];
+const CD_FABRIC = [0xb03040, 0xc04050, 0xd06a40, 0x4a78c0, 0x3a5a8a, 0xff7ab0, 0x8e6fd0, 0xb3122e];
+const cdWood = mat(0x9a6a40, { emissive: 0x4a2a14, emissiveIntensity: 0.3 });
+const cdIron = mat(0x70767e, { emissive: 0x30343a, emissiveIntensity: 0.3 });
+const cdMulti = mat(0xffffff, { emissive: 0x555555, emissiveIntensity: 0.4 });
 const CASTLE_DECOR = { themes: CD_THEMES, stats: [], colliders: 0 };
 const cdFlameMat = new THREE.MeshBasicMaterial({ color: 0xffa030 });
 let cdT = 0;
@@ -163,7 +167,7 @@ function updateCastleDecor(dt) {
         const t = c0 + CI_CELL / 2 + k * CI_CELL, nn = side * (w.thick / 2 + 1.0);
         const px = hz ? t : w.cx + nn, pz = hz ? w.cz + nn : t;
         if (!free(px, pz, pblocked) || inThrone(px, pz)) continue;
-        slots.push({ w, side, t, px, pz, used: false });
+        slots.push({ w, side, t, px, pz, used: false, k, wi });
       }
     });
     // 커튼 은신처 1~3개 (홀 옆 우선, 주 경로 칸 제외)
@@ -179,10 +183,78 @@ function updateCastleDecor(dt) {
       if (curtCells.has(kk)) continue;
       curtCells.add(kk); s.used = true; curtain(s); nCurt++;
     }
+    // ---- 층별 테마 소품 (벽 슬롯 + 홀 중앙; 충돌 없음, 벽/홀에만 붙여서 통로 안 막음) ----
+    if (f < 7) {
+      const fab = mat(CD_FABRIC[f], { emissive: CD_FABRIC[f], emissiveIntensity: 0.25 });
+      mats.fabric = fab; mats.wood = cdWood; mats.iron = cdIron; mats.multi = cdMulti;
+      const pw = (m, s, off, dt, y, al, sy, nr, c) => { const p = wpos(s, off, dt), z = wsz(s, al, nr); add(m, 'box', p.x, y0 + y, p.z, z[0], sy, z[1], 0, c); };
+      const pc = (m, s, off, dt, y, d, hh) => { const p = wpos(s, off, dt); add(m, 'cyl', p.x, y0 + y, p.z, d, hh, d); };
+      const pi = (m, s, off, dt, y, d, c) => { const p = wpos(s, off, dt); add(m, 'ico', p.x, y0 + y, p.z, d, d, d, 0, c); };
+      const armor = (s) => { pw('stone', s, 0.45, 0, 0.05, 0.8, 0.1, 0.8); pc('iron', s, 0.45, 0, 0.55, 0.35, 0.9); pw('iron', s, 0.45, 0, 1.3, 0.6, 0.8, 0.4); pi('iron', s, 0.45, 0, 1.85, 0.35); pw('wood', s, 0.45, 0.5, 1.3, 0.06, 2.6, 0.06); };
+      const counter = (s) => { pw('wood', s, 0.55, 0, 0.45, 2.6, 0.9, 1.0); pw('stone', s, 0.55, 0, 0.93, 2.7, 0.07, 1.1); pc('iron', s, 0.55, -0.7, 1.15, 0.4, 0.45); pc('iron', s, 0.55, 0.6, 1.1, 0.3, 0.35); };
+      const stove = (s) => { pw('iron', s, 0.5, 0, 0.5, 1.3, 1.0, 0.9); pw('dark', s, 0.93, 0, 0.5, 0.8, 0.5, 0.05); pi('flame', s, 0.95, 0, 0.45, 0.25); pc('iron', s, 0.5, 0, 1.2, 0.5, 0.4); pw('iron', s, 0.3, 0, 2.4, 0.5, 2.8, 0.5); };
+      const barrel = (s) => { const d = rng() - 0.5; pc('wood', s, 0.5, d, 0.5, 0.9, 1.0); pc('iron', s, 0.5, d, 0.3, 0.94, 0.1); pc('iron', s, 0.5, d, 0.75, 0.94, 0.1); };
+      const sofa = (s) => { pw('fabric', s, 0.6, 0, 0.3, 2.6, 0.6, 1.0); pw('fabric', s, 0.25, 0, 0.85, 2.6, 0.9, 0.3); for (const g of [-1, 1]) pw('fabric', s, 0.6, g * 1.4, 0.5, 0.3, 0.7, 1.0); };
+      const fire = (s) => { pw('stone', s, 0.45, 0, 1.3, 2.2, 2.6, 0.8); pw('dark', s, 0.87, 0, 0.6, 1.2, 1.1, 0.05); pi('flame', s, 0.88, 0, 0.45, 0.3); pw('wood', s, 0.5, 0, 2.65, 2.6, 0.15, 1.0); };
+      const shelf = (s, books) => { pw('wood', s, 0.35, 0, 1.3, 2.2, 2.6, 0.5); if (books) for (let r = 0; r < 3; r++) pw('multi', s, 0.4, 0, 0.6 + r * 0.7, 1.9, 0.5, 0.45, rng()); };
+      const desk = (s) => { pw('wood', s, 0.6, 0, 0.8, 1.6, 0.1, 0.9); for (const g of [-1, 1]) pw('wood', s, 0.6, g * 0.7, 0.4, 0.1, 0.8, 0.8); pw('multi', s, 0.6, 0.3, 0.92, 0.5, 0.14, 0.4, rng()); pw('wood', s, 1.5, 0, 0.45, 0.6, 0.1, 0.6); pw('wood', s, 1.8, 0, 0.9, 0.6, 0.8, 0.1); };
+      const globe = (s) => { pc('wood', s, 0.5, 0, 0.1, 0.5, 0.2); pc('wood', s, 0.5, 0, 0.5, 0.1, 0.8); pi('multi', s, 0.5, 0, 1.2, 0.9, rng()); };
+      const blocks = (s) => { for (let q = 0; q < 3; q++) { const z = 0.5 + rng() * 0.3, o = 0.6 + rng() * 0.6, d = (rng() - 0.5) * 2.4, c = rng(); pw('multi', s, o, d, z / 2, z, z, z, c); if (q === 0) pw('multi', s, o, d, z + 0.2, z * 0.7, 0.4, z * 0.7, rng()); } };
+      const horse = (s) => { pw('wood', s, 0.6, 0, 0.85, 1.3, 0.5, 0.5); pw('wood', s, 0.6, 0.7, 1.3, 0.3, 0.5, 0.3); pw('multi', s, 0.6, 0.55, 1.2, 0.1, 0.5, 0.2, rng()); for (const g of [-1, 1]) { pw('wood', s, 0.6, g * 0.45, 0.5, 0.1, 0.5, 0.1); pw('wood', s, 0.38 + (g + 1) * 0.11, 0, 0.1, 1.7, 0.1, 0.1); } };
+      const bed = (s) => { pw('wood', s, 1.6, 0, 0.3, 2.2, 0.5, 3.0); pw('fabric', s, 1.6, 0, 0.65, 2.0, 0.25, 2.8); pw('stone', s, 0.6, 0, 0.9, 1.4, 0.15, 0.5); pw('wood', s, 0.2, 0, 1.0, 2.2, 1.5, 0.15); for (const o of [0.15, 3.05]) for (const g of [-1, 1]) pc('wood', s, o, g * 1.05, 1.25, 0.12, 2.5); pw('fabric', s, 1.6, 0, 2.55, 2.2, 0.08, 3.0); };
+      const dresser = (s) => { pw('wood', s, 0.4, 0, 0.55, 1.6, 1.1, 0.7); for (const g of [-1, 1]) pw('gold', s, 0.78, g * 0.4, 0.7, 0.2, 0.08, 0.04); };
+      const night = (s, dt) => { pw('wood', s, 0.35, dt, 0.3, 0.6, 0.6, 0.5); pc('wax', s, 0.35, dt, 0.75, 0.07, 0.3); pi('flame', s, 0.35, dt, 0.97, 0.1); };
+      const KINDS = [
+        [[armor, 1]],
+        [[(s) => { pw('wood', s, 0.45, 0, 0.45, 2.4, 0.9, 0.8); pc('gold', s, 0.45, -0.6, 1.05, 0.12, 0.3); pc('wax', s, 0.45, -0.6, 1.3, 0.07, 0.25); pi('flame', s, 0.45, -0.6, 1.48, 0.1); pc('gold', s, 0.45, 0.6, 1.05, 0.12, 0.3); pc('wax', s, 0.45, 0.6, 1.3, 0.07, 0.25); pi('flame', s, 0.45, 0.6, 1.48, 0.1); }, 1]],
+        [[counter, 3], [stove, 1.5], [barrel, 2]],
+        [[sofa, 2], [fire, 1], [(s) => shelf(s, false), 1]],
+        [[(s) => shelf(s, true), 4], [desk, 1.5], [globe, 0.7]],
+        [[blocks, 3], [horse, 1]],
+        [[(s) => { bed(s); night(s, 1.7); night(s, -1.7); }, 2], [dresser, 2]],
+      ];
+      const PROB = [0.3, 0.3, 0.5, 0.4, 0.6, 0.4, 0.45];
+      const kinds = KINDS[f], wsum = kinds.reduce((a, k) => a + k[1], 0), usedT = new Set();
+      for (const s of slots) {
+        if (s.used || rng() > PROB[f] || usedT.has(s.wi + '|' + s.side + '|' + (s.k - 1))) continue;
+        let r = rng() * wsum, fn = kinds[0][0];
+        for (const k of kinds) { if ((r -= k[1]) < 0) { fn = k[0]; break; } }
+        fn(s); s.used = true; usedT.add(s.wi + '|' + s.side + '|' + s.k);
+      }
+      // 홀 중앙 소품
+      for (const h of fl.halls) {
+        if (h.throne || h.w < 2 || h.h < 2) continue;
+        let ok = true;
+        for (let i = h.i; i < h.i + h.w && ok; i++) for (let j = h.j; j < h.j + h.h; j++) if (blocked.has(key(i, j))) { ok = false; break; }
+        if (!ok) continue;
+        const lx = h.w >= h.h, cx = h.cx, cz = h.cz;
+        const A = (m, g, a, b, y, sa, sy, sb, c) => add(m, g, lx ? cx + a : cx + b, y0 + y, lx ? cz + b : cz + a, lx ? sa : sb, sy, lx ? sb : sa, 0, c);   // a: 긴 축, b: 짧은 축
+        const len = Math.min(10, (lx ? h.w : h.h) * CI_CELL - 8);
+        if (f === 1) {
+          A('wood', 'box', 0, 0, 0.8, len, 0.12, 1.4); A('wood', 'box', 0, 0, 0.4, len - 0.6, 0.75, 0.5);
+          for (let a = -len / 2 + 0.9; a <= len / 2 - 0.8; a += 1.5) for (const g of [-1, 1]) { A('wood', 'box', a, g * 1.25, 0.45, 0.55, 0.1, 0.55); A('wood', 'box', a, g * 1.5, 0.9, 0.55, 0.8, 0.1); }
+          for (const a of [-len / 4, len / 4]) { A('gold', 'cyl', a, 0, 0.95, 0.14, 0.3, 0.14); A('wax', 'cyl', a, 0, 1.25, 0.07, 0.3, 0.07); A('flame', 'ico', a, 0, 1.45, 0.1, 0.1, 0.1); }
+        } else if (f === 2) {
+          A('wood', 'box', 0, 0, 0.45, 3.2, 0.9, 1.3); A('stone', 'box', 0, 0, 0.93, 3.3, 0.07, 1.4);
+          A('iron', 'cyl', -0.8, 0, 1.15, 0.4, 0.45, 0.4); A('iron', 'cyl', 0.8, 0.2, 1.1, 0.3, 0.35, 0.3);
+        } else if (f === 3) {
+          A('fabric', 'box', 0, 0, 0.06, 6, 0.04, 4.4); A('wood', 'box', 0, 0, 0.3, 1.6, 0.1, 1.0);
+          for (const g of [-1, 1]) { A('fabric', 'box', 0, g * 2.2, 0.3, 2.6, 0.6, 0.9); A('fabric', 'box', 0, g * 2.55, 0.8, 2.6, 0.9, 0.25); }
+        } else if (f === 4) {
+          for (const g of [-1, 1]) { A('wood', 'box', g * 3, 0, 0.8, 1.6, 0.1, 0.9); A('wood', 'box', g * 3, 0, 0.4, 1.4, 0.8, 0.12); A('wood', 'box', g * 3 + (g > 0 ? -1.1 : 1.1), 0, 0.45, 0.6, 0.1, 0.6); A('multi', 'box', g * 3, 0.1, 0.92, 0.5, 0.14, 0.4, rng()); }
+          A('wood', 'cyl', 0, 4.2, 0.1, 0.5, 0.2, 0.5); A('wood', 'cyl', 0, 4.2, 0.5, 0.1, 0.8, 0.1); A('multi', 'ico', 0, 4.2, 1.2, 0.9, 0.9, 0.9, rng());
+        } else if (f === 5) {
+          A('fabric', 'box', 0, 0, 0.175, 6, 0.35, 6);
+          for (let q = 0; q < 40; q++) A('multi', 'ico', (rng() - 0.5) * 5.4, (rng() - 0.5) * 5.4, 0.42 + rng() * 0.15, 0.55, 0.55, 0.55, rng());
+          for (const [a, b] of [[-4.2, 3.6], [4.2, -3.6]]) A('multi', 'box', a, b, 0.04, 2.6, 0.06, 2.2, rng());
+        }
+      }
+    }
+    // 벽 장식: 2칸마다 액자/벽등, 사이사이 가끔 배너
     for (const s of slots) {
       if (s.used) continue;
       const r = rng();
-      if (r < 0.2) torch(s); else if (r < 0.32) banner(s); else if (r < 0.46) frame(s);
+      if ((s.k + s.wi) % 2 === 0) { if (r < 0.55) frame(s); else torch(s); } else if (r < 0.12) banner(s);
     }
 
     // ---- 홀: 기둥/샹들리에/러그 (왕좌의 방 제외) ----
@@ -328,6 +400,6 @@ function updateCastleDecor(dt) {
     }
     CASTLE_DECOR.stats.push({ floor: f + 1, draws, instances: inst, colliders: nCols });
     CASTLE_DECOR.colliders += nCols;
-    fl.decor = { theme: th.name, path: path.length };
+    fl.decor = { theme: th.name, themeName: fl.theme, path: path.length };
   }
 })();

@@ -315,6 +315,7 @@ const orbGeo = new THREE.IcosahedronGeometry(0.28, 1);
 const zaps = [];
 function enemyDist(e) { return Math.hypot(e.x - P.x, e.z - P.z) - e.r; }
 function attack() {
+  if (typeof inCastleIn === 'function' && inCastleIn(P.x, P.y, P.z)) return false;   // 성 안에서는 무기 금지
   if (P.atkCD > 0 || P.downT > 0) return false;
   const w = curWeapon();
   P.atkCD = 1 / w.rate;
