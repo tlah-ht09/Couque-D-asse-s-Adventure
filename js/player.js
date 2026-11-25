@@ -63,6 +63,10 @@ const joy = { id: null, x: 0, y: 0, ox: 0, oy: 0, active: false };
 const cam = { yaw: 0, pitch: 0.42, dist: 11, distT: 11, cur: 11, shake: 0, sl: 0 };
 // 시프트락: 캐릭터가 늘 카메라 방향을 보고, 카메라는 오른쪽 어깨 뒤로 비켜나요. PC에선 마우스 커서를 화면에 고정해요
 let shiftLock = false, plSelfExit = false, plSkip = 0;
+// 1인칭: 쿠크다스 성 내부에서만 켜져요
+function firstPerson() { return typeof inCastleIn !== 'undefined' && inCastleIn(P.x, P.y, P.z); }
+function pitchClamp(p) { return cam.fp ? clamp(p, -1.35, 1.35) : clamp(p, -0.15, 1.25); }
+const FP_EYE = 1.65;
 const SL_OFFSET = 1.3, SL_AIM_COS = Math.cos(55 * Math.PI / 180);
 let gameTime = 0;
 
@@ -276,7 +280,7 @@ function updatePlayer(h) {
   P.vz += (wz * spd - P.vz) * k;
   if (P.grounded && !hasInput && !onIce && P.knock <= 0 && Math.hypot(P.vx, P.vz) < 0.3) P.vx = P.vz = 0;
   if ((ix || iy) && !L) P.face = Math.atan2(-wx, -wz);
-  if (shiftLock && !L) P.face = cam.yaw;
+  if ((shiftLock || cam.fp) && !L) P.face = cam.yaw;
 
   // 점프
   P.coyote = P.grounded ? 0.11 : P.coyote - h;
@@ -450,6 +454,31 @@ function rayDist(ox, oy, oz, dx, dy, dz, maxT) {
 const camTarget = new THREE.Vector3(P.x, P.y + 1.4, P.z);
 const camLook = new THREE.Vector3();
 function updateCamera(dt) {
+  const fp = firstPerson();
+  if (fp !== !!cam.fp) {
+    cam.fp = fp;
+    if (fp) { cam.pitch3p = cam.pitch; cam.pitch = 0; camTarget.set(P.x, P.y + FP_EYE, P.z); }
+    else { cam.pitch = cam.pitch3p != null ? cam.pitch3p : 0.42; cam.cur = 1.2; camTarget.set(P.x, P.y + 1.4, P.z); }
+  }
+  if (fp) {
+    // 눈 높이에 카메라를 두고 바라보는 방향으로 돌려요 (계단 오를 때만 살짝 부드럽게)
+    camTarget.set(P.x, lerp(camTarget.y, P.y + FP_EYE, 1 - Math.exp(-16 * dt)), P.z);
+    const cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    camera.position.copy(camTarget);
+    if (cam.shake > 0) {
+      cam.shake -= dt;
+      const s = cam.shake * 0.15;
+      camera.position.x += rand(-s, s); camera.position.y += rand(-s, s); camera.position.z += rand(-s, s);
+    }
+    camLook.set(camera.position.x - Math.sin(cam.yaw) * cp, camera.position.y - sp, camera.position.z - Math.cos(cam.yaw) * cp);
+    camera.lookAt(camLook);
+    cam.cur = 1.2;
+  } else updateCamera3p(dt);
+  sky.position.copy(camera.position);
+  starField.position.copy(camera.position);
+  updateCameraEnv();
+}
+function updateCamera3p(dt) {
   const want = cam.distT * (P.launch ? 1.6 : 1);
   cam.dist = lerp(cam.dist, want, 1 - Math.exp(-6 * dt));
   camTarget.x = lerp(camTarget.x, P.x, 1 - Math.exp(-18 * dt));
@@ -475,8 +504,8 @@ function updateCamera(dt) {
     camera.position.x += rand(-s, s); camera.position.y += rand(-s, s); camera.position.z += rand(-s, s);
   }
   camera.lookAt(camLook);
-  sky.position.copy(camera.position);
-  starField.position.copy(camera.position);
+}
+function updateCameraEnv() {
   sun.position.set(P.x + SUN_OFF.x, P.y + SUN_OFF.y, P.z + SUN_OFF.z);
   sun.target.position.set(P.x, P.y, P.z);
   // 고도에 따른 밤하늘
@@ -492,6 +521,7 @@ function updateCamera(dt) {
 
 // ---------- 아바타 애니메이션 ----------
 function updateAvatar(dt) {
+  avatar.visible = !firstPerson();
   avatar.position.set(P.x, P.y, P.z);
   let d = P.face - avatar.rotation.y;
   while (d > Math.PI) d -= TAU;
@@ -534,7 +564,7 @@ function updateAvatar(dt) {
     if (Math.abs(P.x - c.x) > c.ext + 1 || Math.abs(P.z - c.z) > c.ext + 1) continue;
     if (overlapXZ(c, P.x, P.z, 0.01)) gy = c.top;
   }
-  if (gy > -1e8 && P.y - gy < 30) {
+  if (avatar.visible && gy > -1e8 && P.y - gy < 30) {
     shadowBlob.visible = true;
     shadowBlob.position.set(P.x, gy + 0.03, P.z);
     const s = clamp(1 - (P.y - gy) / 14, 0.35, 1);

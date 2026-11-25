@@ -30,6 +30,7 @@ function onLand(c) {
   if (c.castleGate) { enterCastle(); return; }
   if (c.castleBuild) { tryBuyCastle(); return; }
   if (c.castleDoor) { castleDoorTouch(); return; }
+  if (c.castleEnter) { castleEnterTouch(); return; }
   if (c.castleInExit) { exitCastleInterior(); return; }
   if (c.eggPad) { openEgg(c.eggPad - 1); return; }
   if (c.weaponShop) { openShop('war'); return; }

@@ -825,8 +825,11 @@ function syncPetModels() {
 function updatePets(dt) {
   const t = performance.now() / 1000;
   const n = petFol.length;
+  // 성 안에서는 펫을 모두 숨기고 움직임도 멈춰요 (나오면 플레이어 옆으로 바로 붙어요)
+  const hidePets = typeof inCastleIn !== 'undefined' && inCastleIn(P.x, P.y, P.z);
+  for (let i = 0; i < n; i++) petFol[i].o.g.visible = !hidePets;
   const bx = Math.sin(avatar.rotation.y), bz = Math.cos(avatar.rotation.y);
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < (hidePets ? 0 : n); i++) {
     const f = petFol[i], o = f.o;
     // 양옆에서 조금 뒤로 (카메라와 캐릭터 사이를 가리지 않게)
     const sl = PET_SLOTS[i] || PET_SLOTS[PET_SLOTS.length - 1], ss = Math.max(1, f.def.size || 1);

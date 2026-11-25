@@ -15,8 +15,8 @@ const castleGroups = [];   // 단계별 그룹 (인덱스 = 단계 - 1)
 const castleGhosts = [];   // 아직 안 지은 단계를 보여 주는 반투명 설계도
 const GHOST_NEXT = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.38, depthWrite: false });
 const GHOST_FAR = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.14, depthWrite: false });
-const castleCols = { found: null, walls: [], keep: null, door: null }; // 단계에 따라 켜고 끄는 충돌체
-let castleBoard = null, castleBuyT = 0, castleBoardT = 0, castleDoorT = 0;
+const castleCols = { found: null, walls: [], keep: null, door: null, enter: null }; // 단계에 따라 켜고 끄는 충돌체
+let castleBoard = null, castleEnterLabel = null, castleEnterRing = null, castleBuyT = 0, castleBoardT = 0, castleDoorT = 0;
 
 // 영구 수입 배율 (성 단계마다 +4%, 환생해도 유지)
 function castleMult() { return 1 + 0.04 * S.castle.lv; }
@@ -100,6 +100,12 @@ function buildCastle() {
     B(7, G.sph, [0xff6b8b, 0x7af0ff, 0x9ff3d0][i % 3], Math.cos(a) * 2.2, cy + 2.3, Math.sin(a) * 2.2, 0.3, 0.3, 0.3, 0xffffff);
   }
   B(7, G.sph, 0xff4d6d, 0, cy + 0.7, 0, 0.7, 0.7, 0.7, 0xff2050);
+  // 입장하기 발판 (문 바로 앞, 8단계 완성 후에만 보이고 밟을 수 있어요)
+  B(7, G.cyl, 0x5ef2c0, 0, 0.5, 6.4, 1.1, 0.2, 1.1, 0x2fd9a0);
+  castleEnterRing = B(7, G.torus, 0xffffff, 0, 0.66, 6.4, 1.12, 1.12, 1.12, 0xffffff);
+  castleEnterRing.rotation.x = Math.PI / 2;
+  castleCols.enter = addCylCol(X, 0.5, Z + 6.4, 1.1, 0.1, { castleEnter: true });
+  castleCols.enter.solid = false;
   // 건설 발판 + 안내판
   cylPlat(X + 5, 0.6, Z + 11, 1.4, 0.2, mat(0xffcf3f, { emissive: 0xc08a00, emissiveIntensity: 0.5 }), { castleBuild: true });
   castleBoard = makeLabel(['', ''], { sx: 5.2, pos: new THREE.Vector3(X + 5, 3.6, Z + 11) });
@@ -111,6 +117,10 @@ function buildCastle() {
     scene.add(gh);
     castleGhosts.push(gh);
   }
+  // 입장 안내 (설계도에 복제되지 않게 복제 뒤에 붙여요)
+  castleEnterLabel = makeLabel([{ t: '입장하기', c: '#5ef2c0' }, { t: '밟으면 성 안으로', s: 30 }], { sx: 4.2, pos: new THREE.Vector3(X, 3.2, Z + 6.4) });
+  castleEnterLabel.sp.removeFromParent();
+  castleGroups[7].add(castleEnterLabel.sp);
   refreshCastle();
 }
 
@@ -128,6 +138,7 @@ function refreshCastle() {
   for (const c of castleCols.walls) c.solid = lv >= 2;
   castleCols.keep.solid = lv >= 4;
   castleCols.door.solid = lv >= 1;
+  castleCols.enter.solid = lv >= 8;
   updateCastleBoard();
 }
 function updateCastleBoard() {
@@ -157,9 +168,13 @@ function tryBuyCastle() {
 function updateCastle(dt) {
   if (!S.seenCastle && !modalOpen && Math.hypot(P.x - CASTLE_C.x, P.z - CASTLE_C.z) < 40) {
     S.seenCastle = true; save();
-    showModal('쿠키성 월드', '코인으로 성을 8단계까지 쌓아요. 단계마다 영구 수입 +4% (환생해도 유지). 성을 완성하면 문이 열려요.');
+    showModal('쿠키성 월드', '코인으로 성을 8단계까지 쌓아요. 단계마다 영구 수입 +4% (환생해도 유지). 성을 완성하면 문 앞에 입장하기 발판이 생겨요.');
   }
   if (Math.hypot(P.x - CASTLE_C.x, P.z - CASTLE_C.z) > 40) return;
+  if (castleEnterRing && S.castle.lv >= 8) {
+    const k = 1 + Math.sin(performance.now() / 300) * 0.06;
+    castleEnterRing.scale.set(1.12 * k, 1.12 * k, 1.12 * k);
+  }
   castleBoardT -= dt;
   if (castleBoardT <= 0) { castleBoardT = 0.5; updateCastleBoard(); }
 }
@@ -168,6 +183,10 @@ function castleDoorTouch() {
   if (now - castleDoorT < 1500) return;
   castleDoorT = now;
   if (S.castle.lv < 8) { toast('성을 완성하면 열려요'); return; }
+  toast('문 앞 입장하기 발판을 밟아 주세요');
+}
+function castleEnterTouch() {
+  if (S.castle.lv < 8) return;
   if (typeof enterCastleInterior === 'function') enterCastleInterior();
 }
 function enterCastle() {

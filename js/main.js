@@ -75,7 +75,7 @@ canvas.addEventListener('pointermove', (e) => {
     if (plSkip > 0) { plSkip--; return; } // 고정이 걸리거나 풀린 직후 첫 움직임은 크게 튀는 브라우저가 있어 버려요
     const k = 0.0032 * S.sens, mx = clamp(e.movementX || 0, -250, 250), my = clamp(e.movementY || 0, -250, 250);
     cam.yaw -= mx * k;
-    cam.pitch = clamp(cam.pitch + my * k * 0.8, -0.15, 1.25);
+    cam.pitch = pitchClamp(cam.pitch + my * k * 0.8);
     return;
   }
   const p = ptrs.get(e.pointerId);
@@ -86,7 +86,7 @@ canvas.addEventListener('pointermove', (e) => {
   if (p.drag) {
     const k = (e.pointerType === 'touch' ? 0.0065 : 0.005) * S.sens;
     cam.yaw -= dx * k;
-    cam.pitch = clamp(cam.pitch + dy * k * 0.8, -0.15, 1.25);
+    cam.pitch = pitchClamp(cam.pitch + dy * k * 0.8);
   }
 });
 function endPtr(e) {
