@@ -268,7 +268,7 @@ function updatePlayer(h) {
   const wx = rx * ix + fx * iy, wz = rz * ix + fz * iy;
   const hasInput = !!(ix || iy) && !L;
   updateStamina(h, hasInput, L);
-  const spd = SPEED * speedMult() * (RUN.on ? RUN_MULT : 1);
+  const spd = SPEED * (firstPerson() ? 1 : speedMult()) * (RUN.on ? RUN_MULT : 1);   // 성 안: 강화/펫 보너스 없이 기본 속도
   const onIce = P.grounded && P.ground && P.ground.ice;
   const turning = hasInput && (wx * P.vx + wz * P.vz) < 0;
   let rate;
