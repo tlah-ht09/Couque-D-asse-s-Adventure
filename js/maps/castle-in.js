@@ -325,14 +325,16 @@ function ciInst(parent, list, material) {
       ];
       for (const q of parts) col(q[0], q[1], q[2], q[3], q[4], q[5], {});
       // 문짝(장식, 충돌 없음): 앞 모서리에서 바깥으로 활짝 열린 모양
+      const doorIdx = wardDoors.length;
       for (const sgn of [1, -1]) put(uc + WD / 2 - 0.4 + 0.45, sgn * (WW / 2 + WT), 0.8, 0.05, 0.05, 1.9, wardDoors);
       const hx = cc.x + fx * (uc - 0.02), hz = cc.z + fz * (uc - 0.02);
       const entry = { floor: f, x: hx, y: y0, z: hz, fx, fz };
       castleHides.push(entry);
-      wardrobes.push({ ...entry, i: w.i, j: w.j, w: WW, d: WD, h: WH, cell: cc });
+      wardrobes.push({ ...entry, doorIdx, i: w.i, j: w.j, w: WW, d: WD, h: WH, cell: cc });
     }
     ciInst(group, wardBoxes, mat(0x8a5a2e, { emissive: 0x6b3f1a, emissiveIntensity: 0.3 }));
-    ciInst(group, wardDoors, mat(0xa87a45, { emissive: 0x6b3f1a, emissiveIntensity: 0.3 }));
+    const wardDoorMesh = ciInst(group, wardDoors, mat(0xa87a45, { emissive: 0x6b3f1a, emissiveIntensity: 0.3 }));
+    for (const w of wardrobes) w.doorMesh = wardDoorMesh;
     // --- 1층 출구 패드 ---
     let arrival = CASTLE_IN.cellCenter(gen.A.i, gen.A.j);
     if (f === 0) {
@@ -368,6 +370,7 @@ function castleInAttach() {
 }
 function updateCastleIn(dt) {
   castleInAttach();
+  if (typeof updateStalker === 'function') updateStalker(dt);
   if (!inCastleIn(P.x, P.y, P.z)) { ciWindT = 1.5; return; }
   castleInSetFloor(CASTLE_IN.playerFloor());
   ciWindT -= dt;

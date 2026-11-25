@@ -259,6 +259,7 @@ function physicsStep(h) {
 }
 
 function updatePlayer(h) {
+  if (typeof stkHold === 'function' && stkHold()) return;   // 옷장 안 / 괴물에게 잡히는 중
   P.inv = Math.max(0, P.inv - h);
   P.knock = Math.max(0, P.knock - h);
   const L = P.launch;

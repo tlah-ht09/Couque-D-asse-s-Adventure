@@ -30,7 +30,8 @@ addEventListener('keydown', (e) => {
   if (e.repeat) { if (e.code !== 'Space') keys.add(e.code); return; }
   keys.add(e.code);
   if (e.code === 'Space') { P.jumpBuf = 0.14; P.jumpHeld = true; }
-  if (e.code === 'KeyF' || e.code === 'KeyE') mine();
+  if (e.code === 'KeyE' && typeof stkKeyE === 'function' && stkKeyE()) { /* 옷장 */ }
+  else if (e.code === 'KeyF' || e.code === 'KeyE') mine();
   if (e.code === 'KeyH') goHome(true);
   if (e.code === 'KeyR') toCheckpoint();
   if (e.code === 'KeyM') toggleMute();
