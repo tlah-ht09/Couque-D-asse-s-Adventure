@@ -386,7 +386,7 @@ function ciWindGust() {
     const src = actx.createBufferSource(); src.buffer = ciWindBuf; src.loop = true;
     const f = actx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.7;
     f.frequency.setValueAtTime(f0, t0); f.frequency.linearRampToValueAtTime(f0 * 2.2, t0 + dur * 0.45); f.frequency.linearRampToValueAtTime(f0 * 0.8, t0 + dur);
-    const g = actx.createGain(), v = 0.05 + Math.random() * 0.04;
+    const g = actx.createGain(), v = 0.04 + Math.random() * 0.03;
     g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v, t0 + dur * 0.4); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     const pan = actx.createStereoPanner ? actx.createStereoPanner() : null;
     if (pan) { pan.pan.setValueAtTime(Math.random() * 1.6 - 0.8, t0); src.connect(f); f.connect(g); g.connect(pan); pan.connect(actx.destination); } else { src.connect(f); f.connect(g); g.connect(actx.destination); }

@@ -9,7 +9,7 @@
 // =====================================================================
 const STK = {
   R: 120, SPEED: 9 * 1.25, WANDER: 3.2, CATCH: 1.1, SEEN_NEED: 1.5, SEEN_WIN: 2.5,
-  LINGER_SEEN: 8, LINGER: 3, HOWL_CD: 8, HOWL_VOL: 0.06, SCARE_VOL: 0.16, TRACK: 1.3, BODY_R: 0.45, STEP_RANGE: 45,
+  LINGER_SEEN: 8, LINGER: 3, HOWL_CD: 8, HOWL_VOL: 0.06, SCARE_VOL: 0.22, TRACK: 1.3, BODY_R: 0.45, STEP_RANGE: 45,
   pDist: 0, beatT: 0, vig: null,
   mons: [], time: 0, seenLog: [], seenNow: false, hide: null, kill: null, grace: 0, wasIn: false, pf: -1, hint: null, flash: null, doors: null,
 };
@@ -271,11 +271,11 @@ function stkMonStep(m) {   // 괴물 발소리: 가까울수록 크게, 벽 너�
   if (k <= 0) return;
   const los = Math.abs(P.y - m.y) < 3 && m.fl.index === CASTLE_IN.playerFloor() && stkLOS(m.fl, m.x, m.z, P.x, P.z);
   const ang = Math.atan2(m.x - P.x, m.z - P.z) - Math.atan2(-Math.sin(cam.yaw), -Math.cos(cam.yaw));
-  const vol = 0.32 * k * k * (los ? 1 : 0.6);
+  const vol = 0.42 * k * k * (los ? 1 : 0.6);
   stkThump(los ? 260 : 140, vol, 0.22, -Math.sin(ang) * 0.7);
   stkTone(48 + Math.random() * 10, 0.18, 'sine', vol * 0.8, -18);
 }
-function stkPlayerStep(run) { stkThump(run ? 520 : 420, run ? 0.05 : 0.035, 0.09, (Math.random() - 0.5) * 0.2); }
+function stkPlayerStep(run) { stkThump(run ? 520 : 420, run ? 0.07 : 0.05, 0.09, (Math.random() - 0.5) * 0.2); }
 function stkBeat(vol) { stkTone(58, 0.11, 'sine', vol, -12); stkTone(52, 0.13, 'sine', vol * 0.75, -12, 0.17); }
 // 발견했을 때 괴성: 갈라진 목소리가 치솟았다 떨어져요 (너무 크지 않게, 멀수록 조금 작게)
 let stkNoiseBuf = null;
@@ -562,7 +562,7 @@ function updateStalker(dt) {
   const fear = STK.kill ? 1 : Math.max(0, 1 - near / 28);
   STK.vig.style.opacity = (fear * 0.85).toFixed(3);
   STK.beatT -= dt;
-  if (fear > 0.05 && STK.beatT <= 0) { STK.beatT = 1.1 - fear * 0.7; stkBeat(0.05 + fear * 0.12); }
+  if (fear > 0.05 && STK.beatT <= 0) { STK.beatT = 1.1 - fear * 0.7; stkBeat(0.06 + fear * 0.14); }
   if (fear > 0.75 && !STK.kill) cam.shake = Math.max(cam.shake || 0, (fear - 0.75) * 0.25);
   // 안내
   const txt = STK.kill ? '' : STK.hide ? 'E  옷장에서 나가기' : stkNearWard() ? 'E  옷장에 숨기' : '';
