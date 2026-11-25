@@ -273,7 +273,7 @@ function rankCard(title, color, rows, fmtv, emptyText) {
 function renderRank(body) {
   body.appendChild(el('div', 'card', '<h4>랭킹</h4><p>이 게임을 함께 연 사람들의 기록이에요. 코스는 시작 발판부터 완주해야 기록이 남아요.</p>'));
   if (!cloud.board) {
-    const mine = ['끝없는 탑 최고 ' + S.tower.best + '층', '보스 레이드 단계 합계 ' + raidTotal(), '오늘의 도전 ' + (S.daily.key === dateKey() ? fmtTime(S.daily.best) : '기록 없음')];
+    const mine = ['끝없는 하늘 탑 최고 ' + S.tower.best + '층', '보스 레이드 단계 합계 ' + raidTotal(), '오늘의 도전 ' + (S.daily.key === dateKey() ? fmtTime(S.daily.best) : '기록 없음')];
     for (const z of ZONES) { const r = S.courses[z.id]; mine.push(z.course + ' ' + (r && r.best ? fmtTime(r.best) : '기록 없음')); }
     body.appendChild(el('div', 'card', '<h4>내 기록</h4><p>' + mine.join('<br>') + '</p>'));
     body.appendChild(el('div', 'card', '<p>' + (cloud.boardErr ? '랭킹을 불러오지 못했어요. 잠시 후 다시 열어 보세요.' : 'claude.ai에서 이 게임을 열면 다른 사람들과 기록을 비교할 수 있어요.') + '</p>'));
@@ -540,8 +540,8 @@ async function submitFeedback() {
   fb.lastSent = Date.now();
   fb.text = '';
   SFX.quest();
-  const msg = how === 'mail' ? '개발자 메일로 피드백을 보냈어요.' : how === 'stored' ? '피드백이 저장됐어요. 개발자가 확인할게요.' : '피드백을 받았어요. 지금은 전송이 밀려 있어서, 게임이 알아서 다시 보낼게요.';
-  if (modalOpen && $('fbText')) showModal('고마워요!', '<p>' + msg + '</p><p>보내 준 의견은 다음 업데이트에 큰 도움이 돼요.</p>', [{ t: '확인', primary: true }]);
+  const msg = how === 'mail' ? '개발자 메일로 피드백을 보냈어요.' : how === 'stored' ? '피드백이 저장됐어요. 개발자가 확인할게요.' : '지금은 전송이 안 돼서 피드백을 이 기기에 보관했어요. 연결되면 자동으로 다시 보낼게요.';
+  if (modalOpen && $('fbText')) showModal('고마워요!', '<p>' + msg + '</p>', [{ t: '확인', primary: true }]);
   else toast(msg, 'good');
 }
 // 일반 웹(https)에서 FormSubmit으로 개발자 메일에 바로 보내요. claude.ai 안에서는 외부 요청이 막혀 있어 건너뛰어요.
@@ -654,7 +654,7 @@ function whatsNew() {
     '<kbd>환생 상점</kbd><span>환생 포인트로 영구 강화 (기존 토큰은 포인트로 바뀌었어요)</span>' +
     '<kbd>메달 · 업적</kbd><span>코스 시간 기록 메달, 끝없이 이어지는 업적</span>' +
     '<kbd>황금 별똥별</kbd><span>가끔 근처에 떨어져요. 잡으면 수입 7배 등 보너스</span></div>' +
-    '<p>비용과 보상도 오래 즐길 수 있게 다시 맞췄어요. 처음부터 새로 하고 싶다면 상점 › 설정에서 초기화할 수 있어요.</p>',
+    '<p>비용과 보상도 다시 맞췄어요. 처음부터 새로 하고 싶다면 상점 › 설정에서 초기화할 수 있어요.</p>',
     [{ t: '둘러보기', primary: true, fn: () => { S.seenV2 = true; S.seenV3 = true; save(); } }]);
 }
 function boot() {

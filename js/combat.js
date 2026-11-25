@@ -294,7 +294,7 @@ function playerDown() {
     P.hp = maxHp(); P.hurtInv = 2;
     burst(P.x, P.y + 1, P.z, [0xff5a1f, 0xffb000, 0xffe066], 50, 7, 0.22, 5, 0.4, 1.1);
     SFX.finish();
-    toast('캐러멜 불사조의 가호! 다시 일어났어요 (90초 뒤 다시)', 'gold', 3200);
+    toast('캐러멜 불사조의 가호! 다시 일어났어요 (다음 부활은 90초 뒤)', 'gold', 3200);
     return;
   }
   P.hp = maxHp();

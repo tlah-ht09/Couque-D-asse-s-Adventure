@@ -329,7 +329,7 @@ function renderPetTab(body) {
   seg.appendChild(box);
   body.appendChild(seg);
   if (petView === 'egg') {
-    const c = el('div', 'card', '<h4>펫 뽑기</h4><p>알을 깨서 펫을 얻어요. 비싼 알일수록 높은 등급이 잘 나와요. 아우라 펫은 오로라 알, 그리고 아우라마다 3%인 아우라 알에서 나와요. 펫은 환생해도 사라지지 않아요.</p>');
+    const c = el('div', 'card', '<h4>펫 뽑기</h4><p>알을 깨서 펫을 얻어요. 비싼 알일수록 높은 등급이 잘 나와요. 아우라 펫은 오로라 알과 아우라 알(아우라 펫마다 3%)에서 나와요. 펫은 환생해도 사라지지 않아요.</p>');
     const go = el('button', 'buy alt wide', '펫 부화장으로 가기');
     go.onclick = () => { closeShop(); enterHatch(); };
     c.appendChild(go);
@@ -407,8 +407,8 @@ function renderPetTab(body) {
 
 function whatsNewV5() {
   showModal('펫과 도감이 생겼어요', '<div class="ctl">' +
-    '<kbd>펫 부화장</kbd><span>허브 남쪽 분홍 문 (사냥터 문 옆). 알 5종, 1억 ~ 100조 코인. 비싼 알일수록 높은 등급이 잘 나와요</span>' +
-    '<kbd>등급</kbd><span>노말 · 희귀 · 레어 · 유니크 · 신화 · 전설, 그리고 오로라 알에서만 0.1%로 나오는 <span class="rAura">아우라</span></span>' +
+    '<kbd>펫 부화장</kbd><span>허브 남쪽 분홍 문 (사냥터 문 옆). 알 6종, 1억 ~ 1경 코인. 비싼 알일수록 높은 등급이 잘 나와요</span>' +
+    '<kbd>등급</kbd><span>노말 · 희귀 · 레어 · 유니크 · 신화 · 전설, 그리고 오로라 알(0.1%)과 아우라 알에서 나오는 <span class="rAura">아우라</span></span>' +
     '<kbd>효과</kbd><span>코인 · 보석 · 무기 피해 · 체력 · 점프력 · 이동 속도. 아우라 펫은 고유 능력까지</span>' +
     '<kbd>합성</kbd><span>같은 펫 5마리 → 황금 (효과 2배), 황금 5마리 → 무지개 (4배)</span>' +
     '<kbd>도감</kbd><span>새 펫마다 영구 수입 +3%. 많이 모을수록 펫 칸과 10개 뽑기가 열려요</span></div>' +

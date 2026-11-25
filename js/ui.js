@@ -146,7 +146,7 @@ function renderShop() {
   } else if (T === 'pet') {
     renderPetTab(body);
   } else if (T === 'gem') {
-    body.appendChild(el('div', 'card', '<h4>하늘 보석</h4><p>끝없는 탑, 메달, 오늘의 도전, 별 조각, 업적, 황금 별똥별에서 얻어요. 보석으로 산 것은 환생해도 사라지지 않아요.</p>'));
+    body.appendChild(el('div', 'card', '<h4>하늘 보석</h4><p>끝없는 하늘 탑, 메달, 오늘의 도전, 별 조각, 업적, 황금 별똥별에서 얻어요. 보석으로 산 것은 환생해도 사라지지 않아요.</p>'));
     const bst = row('x2', '#7af0ff');
     bst.btn.onclick = () => { if (buyBoost()) updateShop(); else SFX.err(); };
     body.appendChild(bst.r);
@@ -184,7 +184,7 @@ function renderShop() {
       body.appendChild(grid);
     }
   } else if (T === 'world') {
-    body.appendChild(el('div', 'card', '<h4>섬 지도</h4><p>다리를 놓아 새 섬을 열고 코스를 처음 완주하면 수입이 영구로 늘어나요. 빠르게 완주하면 메달과 보석을 받아요.</p>'));
+    body.appendChild(el('div', 'card', '<h4>섬 지도</h4><p>다리를 놓아 새 섬을 열고 코스를 처음 완주하면 수입이 영구히 늘어나요. 빠르게 완주하면 메달과 보석을 받아요.</p>'));
     const hub = row('H', '#86d26f');
     hub.btn.className = 'buy alt'; hub.btn.textContent = '이동';
     hub.btn.onclick = () => { goHome(true); closeShop(); };
@@ -194,7 +194,7 @@ function renderShop() {
     tw.btn.className = 'buy alt'; tw.btn.textContent = '입장';
     tw.btn.onclick = () => { closeShop(); enterTower(0); };
     body.appendChild(tw.r);
-    shopRefs.push(() => { tw.mid.innerHTML = '<div class="nm">끝없는 하늘 탑 <small>최고 ' + S.tower.best + '층</small></div><div class="ds">끝없이 이어지는 점프맵. 새 층마다 보석, 수입 <b>+1%/층</b> (지금 +' + Math.min(S.tower.best, 500) + '%)</div>'; });
+    shopRefs.push(() => { tw.mid.innerHTML = '<div class="nm">끝없는 하늘 탑 <small>최고 ' + S.tower.best + '층</small></div><div class="ds">끝없이 이어지는 점프맵. 새 층마다 보석과 수입 <b>+1%</b> (지금 +' + Math.min(S.tower.best, 500) + '%)</div>'; });
     const tc = row('▲', '#7af0ff');
     tc.btn.className = 'buy alt';
     tc.btn.onclick = () => { closeShop(); continueTower(); };
@@ -329,7 +329,7 @@ function renderShop() {
     cg.appendChild(gnow);
     body.appendChild(cg);
     shopRefs.push(() => { gnow.textContent = '지금: ' + gfxDesc(); });
-    const c2 = el('div', 'card', '<h4>저장 코드</h4><p>자동 저장은 이 브라우저에 돼요. 다른 기기로 옮기려면 코드를 복사해 두세요.</p>');
+    const c2 = el('div', 'card', '<h4>저장 코드</h4><p>진행은 이 브라우저에 자동 저장돼요. 다른 기기로 옮기려면 코드를 복사해 두세요.</p>');
     const ta = el('textarea'); ta.id = 'saveCode'; ta.placeholder = '저장 코드를 붙여 넣으세요';
     const rowb = el('div', 'btnRow');
     const bc = el('button', 'buy alt', '코드 복사');
