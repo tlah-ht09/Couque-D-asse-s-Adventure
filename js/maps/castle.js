@@ -12,6 +12,9 @@ const CASTLE_STAGES = [
   { name: '쿠키 왕관', cost: 1e32 },
 ];
 const castleGroups = [];   // 단계별 그룹 (인덱스 = 단계 - 1)
+const castleGhosts = [];   // 아직 안 지은 단계를 보여 주는 반투명 설계도
+const GHOST_NEXT = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.38, depthWrite: false });
+const GHOST_FAR = new THREE.MeshBasicMaterial({ color: 0xfff1c9, transparent: true, opacity: 0.14, depthWrite: false });
 const castleCols = { found: null, walls: [], keep: null, door: null }; // 단계에 따라 켜고 끄는 충돌체
 let castleBoard = null, castleBuyT = 0, castleBoardT = 0;
 
@@ -21,7 +24,7 @@ function castleMult() { return (1 + 0.04 * S.castle.lv) * (1 + 0.03 * S.castle.f
 function buildCastle() {
   const X = CASTLE_C.x, Z = CASTLE_C.z;
   // 허브 출입구 (허브 가장자리, 축에서 벗어난 자리)
-  gate(15.6, 0, -15.6, 0xffcf8a, 0xc07a30, { castleGate: true }, [{ t: '쿠키성 월드', c: '#ffcf8a' }, { t: '입장', s: 34 }]);
+  gate(8.0, 0, -19.4, 0xffcf8a, 0xc07a30, { castleGate: true }, [{ t: '쿠키성 월드', c: '#ffcf8a' }, { t: '입장', s: 34 }]);
   const th = { grass: 0xf3d9a4, dirt: 0xc98f4e, dirt2: 0x8a5a2e };
   island(X, 0, Z, CASTLE_R, th, { castleIsland: true });
   addPortal(X + 12, 0, Z + 8, 0, -0.6);
@@ -100,6 +103,14 @@ function buildCastle() {
   // 건설 발판 + 안내판
   cylPlat(X + 5, 0.6, Z + 11, 1.4, 0.2, mat(0xffcf3f, { emissive: 0xc08a00, emissiveIntensity: 0.5 }), { castleBuild: true });
   castleBoard = makeLabel(['', ''], { sx: 5.2, pos: new THREE.Vector3(X + 5, 3.6, Z + 11) });
+  // 설계도: 단계 그룹을 복제해서 반투명 재질만 바꿔요 (지오메트리는 공유)
+  for (const g of castleGroups) {
+    const gh = g.clone(true);
+    gh.traverse((o) => { if (o.isMesh) { o.material = GHOST_FAR; o.castShadow = o.receiveShadow = false; } });
+    gh.visible = false;
+    scene.add(gh);
+    castleGhosts.push(gh);
+  }
   buildCastleInterior();
   refreshCastle();
 }
@@ -108,6 +119,12 @@ function refreshCastle() {
   if (!castleGroups.length) return;
   const lv = S.castle.lv;
   castleGroups.forEach((g, k) => { g.visible = lv >= k + 1; });
+  // 안 지은 단계는 설계도로, 다음 단계는 조금 더 진하게
+  castleGhosts.forEach((gh, k) => {
+    gh.visible = lv < k + 1;
+    const m = k === lv ? GHOST_NEXT : GHOST_FAR;
+    gh.traverse((o) => { if (o.isMesh) o.material = m; });
+  });
   castleCols.found.solid = lv >= 1;
   for (const c of castleCols.walls) c.solid = lv >= 2;
   castleCols.keep.solid = lv >= 4;
