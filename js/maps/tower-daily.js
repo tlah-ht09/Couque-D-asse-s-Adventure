@@ -12,7 +12,43 @@ const DAILY_THEME = { grass: 0xffe08a, dirt: 0xc08a4a, dirt2: 0x8a5a2b };
 function makeTrack(name, origin, seedFn, diffFn, maxFloors) {
   return { name, origin, seed: seedFn, diff: diffFn, max: maxFloors, specs: [], built: new Map(), pairs: [] };
 }
-const TT = makeTrack('tower', { x: TOWER_C.x, top: 0, z: TOWER_C.z - 18 }, (k) => hashStr('tower-' + k), (k) => Math.min(1, (k - 1) / 70), Infinity);
+const TT = makeTrack('tower', { x: TOWER_C.x, top: 0, z: TOWER_C.z - 18 }, (k) => hashStr('tower-' + TT.runSeed + '-' + k), (k) => Math.min(1, (k - 1) / 70), Infinity);
+TT.runSeed = (Math.random() * 1e9) | 0;
+// 새 판: 시드를 바꾸고 지어둔 층을 모두 버림 → 매번 다른 탑
+function reseedTower() {
+  TT.runSeed = (Math.random() * 1e9) | 0;
+  for (const b of TT.built.values()) disposeBuild(b);
+  TT.built.clear(); if (TT.pairsByFloor) TT.pairsByFloor.clear();
+  TT.specs.length = 0; TT.lastLo = TT.lastHi = null;
+}
+// 구간 템플릿 (타워오브헬식 기믹 단위). seq: 종류 이름 | '*' 아무거나 | 'A','B' 이 층에서 고정된 랜덤 종류
+// lat: rand/zig/line/arc/wave · dy: stairs/flat · sc: 발판 크기 배율 · sp: 이동 속도 배율
+const TPLS = [
+  { id: 'mix', name: '뒤죽박죽', w: 3, seq: ['*'] },
+  { id: 'aaa', name: '한 우물만', min: 3, w: 1.5, seq: ['A'], lat: 'arc' },
+  { id: 'ab', name: '반복 리듬', min: 4, w: 2, seq: ['A', 'B'], lat: 'wave' },
+  { id: 'stairs', name: '하늘 계단', w: 1, seq: ['n'], lat: 'arc', dy: 'stairs', sc: 0.85 },
+  { id: 'disczig', name: '지그재그 원판', min: 2, w: 1, need: ['disc'], seq: ['disc'], lat: 'zig' },
+  { id: 'beamline', name: '외나무 다리', min: 3, w: 1, need: ['beam'], seq: ['beam'], lat: 'line', dy: 'flat' },
+  { id: 'movers', name: '흔들리는 길', min: 4, w: 1, need: ['ml'], seq: ['ml'], lat: 'line' },
+  { id: 'tiny', name: '바늘 발판', min: 5, w: 0.8, seq: ['n'], lat: 'zig', sc: 0.6 },
+  { id: 'fadeway', name: '사라지는 복도', min: 6, w: 1, need: ['fade'], seq: ['fade'], lat: 'line' },
+  { id: 'tramp', name: '트램펄린 연쇄', min: 7, w: 0.8, need: ['bounce'], seq: ['bounce', 'n'] },
+  { id: 'icezig', name: '미끄럼 지그재그', min: 8, w: 1, need: ['ice'], seq: ['ice'], lat: 'zig' },
+  { id: 'lavarun', name: '용암 건너기', min: 9, w: 0.8, need: ['lava'], seq: ['lava', 'n'] },
+  { id: 'elev', name: '엘리베이터', min: 10, w: 0.8, need: ['my'], seq: ['my', 'n'], lat: 'wave' },
+  { id: 'spin', name: '회전 지옥', min: 12, w: 0.8, need: ['sweep'], seq: ['sweep', 'disc'] },
+  { id: 'rush', name: '고속 셔틀', min: 15, w: 0.7, need: ['mf', 'ml'], seq: ['mf', 'ml'], sp: 1.25 },
+];
+function pickTpl(rng, kEff, avail, prevId) {
+  const ok = TPLS.filter((t) => kEff >= (t.min || 0) && (t.need || []).every((n) => avail.includes(n)));
+  const tw = ok.reduce((a, t) => a + t.w, 0);
+  for (let tries = 0; ; tries++) {
+    let r = rng() * tw, pick = ok[0];
+    for (const t of ok) { if ((r -= t.w) <= 0) { pick = t; break; } }
+    if (pick.id !== prevId || tries >= 2) return pick;
+  }
+}
 let DT = null; // 오늘의 도전 트랙 (날짜별로 다시 만듦)
 function makeDailyTrack(key) {
   return makeTrack('daily', { x: DAILY_C.x, top: 0, z: DAILY_C.z - 18 }, (k) => hashStr('daily-' + key + '-' + k), (k) => [0.3, 0.45, 0.6, 0.75][k - 1], 4);
@@ -45,7 +81,7 @@ function genFloor(T, k) {
   if (kEff >= 15) table.push(['mf', 0.5 + d]);
   const tw = table.reduce((a, b) => a + b[1], 0);
   const pickKind = () => { let r = rng() * tw; for (const [n, w] of table) { if ((r -= w) <= 0) return n; } return 'n'; };
-  const mkItem = (kind) => {
+  const mkItem0 = (kind) => {
     const it = { kind, w: 3, dd: 3, ext: 0 };
     switch (kind) {
       case 'disc': { const r = R(lerp(1.6, 1.05, d), lerp(1.9, 1.35, d)); it.r = r; it.w = it.dd = 2 * r; break; }
@@ -62,12 +98,36 @@ function genFloor(T, k) {
     }
     return it;
   };
+  // 0) 구간 템플릿
+  const avail = table.map((t) => t[0]);
+  const tpl = pickTpl(rng, kEff, avail, k > 1 ? T.specs[k - 2].tpl : null);
+  const mir = rng() < 0.5 ? -1 : 1;
+  const mkItem = (kind) => {
+    const it = mkItem0(kind);
+    if (tpl.sc && ['n', 'fade', 'ice', 'disc'].includes(kind)) {
+      it.w = Math.max(1.1, it.w * tpl.sc); it.dd = Math.max(1.1, it.dd * tpl.sc);
+      if (it.r) { it.r = it.w / 2; it.dd = it.w; }
+    }
+    if (tpl.sp) { if (it.move) it.move.spd *= tpl.sp; if (it.spd) it.spd *= tpl.sp; }
+    return it;
+  };
+  const slot = {};
+  const pickSlot = (s) => {
+    if (slot[s]) return slot[s];
+    let kd = 'n';
+    for (let i = 0; i < 6; i++) { kd = pickKind(); if (kd !== 'n' && !Object.values(slot).includes(kd)) break; }
+    return (slot[s] = kd);
+  };
+  const kindAt = (j) => {
+    const s = tpl.seq[j % tpl.seq.length];
+    return s === '*' ? pickKind() : (s === 'A' || s === 'B') ? pickSlot(s) : s;
+  };
   // 1) 아이템 고르기
   const items = [];
   const gNom = (gmin + gmax) / 2;
   let used = 0;
   while (used + (items.length + 1) * gNom < SPAN - 2) {
-    let kind = pickKind();
+    let kind = kindAt(items.length);
     const last = items[items.length - 1];
     if (last && last.kind === 'bounce' && !['n', 'disc', 'ice'].includes(kind)) kind = 'n';
     if (last && (last.kind === 'my') && kind === 'bounce') kind = 'n';
@@ -119,11 +179,22 @@ function genFloor(T, k) {
     const amp = it.move && it.move.a === 'f' ? it.move.amp : 0;
     const cF = F + amp + it.dd / 2;
     F = cF + it.dd / 2 + amp;
-    let nl = clamp(L + R(-latS, latS), -3, 3);
+    const nI = items.length;
+    let tgt;
+    switch (tpl.lat) {
+      case 'zig': tgt = (j % 2 ? 1 : -1) * mir * lerp(1.6, 2.6, d); break;
+      case 'line': tgt = R(-0.3, 0.3); break;
+      case 'arc': tgt = mir * (Math.sin(Math.PI * (j + 0.5) / nI) * 5 - 2.5); break;
+      case 'wave': tgt = mir * Math.sin(j * 1.4) * 2.4; break;
+      default: tgt = L + R(-latS, latS);
+    }
+    let nl = clamp(tgt, -3, 3);
     const lim = (prevW + it.w) / 2 + 0.2;
     nl = clamp(nl, L - lim, L + lim);
     if (j === items.length - 1) nl = clamp(nl, -(2.5 + it.w / 2 + 0.2), 2.5 + it.w / 2 + 0.2);
     let dy = R(-0.5, lerp(1.0, 1.4, d));
+    if (tpl.dy === 'stairs') dy = R(0.8, lerp(1.0, 1.4, d));
+    else if (tpl.dy === 'flat') dy = R(-0.3, 0.3);
     if (prevKind === 'bounce') dy = R(3, 4.5);
     else if (it.kind === 'my' || prevKind === 'my') dy = R(-0.2, 0.4);
     else if (it.kind === 'sweep' || it.kind === 'lava') dy = Math.min(dy, 0.6);
@@ -151,7 +222,7 @@ function genFloor(T, k) {
   const endTop = (out.length ? out[out.length - 1].top : prev.top) + dyEnd;
   const [fx, fz] = DIRS4[dirIdx];
   const end = { x: prev.x + fx * TRACK_SIDE, top: endTop, z: prev.z + fz * TRACK_SIDE };
-  return { k, dirIdx, start: prev, end, items: out, theme: 1 + (Math.floor((k - 1) / 10) % 5) };
+  return { k, dirIdx, start: prev, end, items: out, tpl: tpl.id, tplName: tpl.name, theme: 1 + (Math.floor((k - 1) / 10) % 5) };
 }
 
 // ---------- 층 만들기 ----------
@@ -217,9 +288,9 @@ function buildFloor(T, k) {
   fm.userData.own = true;
   corner.flag = mesh(G.box, fm, px + 0.55, sp.end.top + 2.45, pz, 1.1, 0.7, 0.06);
   const lines = T.name === 'tower'
-    ? (milestone ? [{ t: k + '층', c: '#ffcf3f', s: 64 }, { t: '보석 +' + (10 + k / 10), c: '#7af0ff', s: 34 }] : [{ t: k + '층', c: '#ffffff', s: 60 }])
+    ? (milestone ? [{ t: k + '층', c: '#ffcf3f', s: 64 }, { t: '보석 +' + (10 + k / 10), c: '#7af0ff', s: 34 }] : [{ t: k + '층', c: '#ffffff', s: 60 }]).concat([{ t: '▶ ' + trackSpec(T, k + 1).tplName, c: '#c3a6ff', s: 30 }])
     : (isEnd ? [{ t: '결승', c: '#ffcf3f', s: 60 }] : [{ t: k + ' / ' + T.max + ' 구간', c: '#ffffff', s: 50 }]);
-  makeLabel(lines, { w: 256, h: 128, sx: milestone || isEnd ? 3.6 : 2.8, pos: new THREE.Vector3(sp.end.x, sp.end.top + 3.6, sp.end.z), noBg: true });
+  makeLabel(lines, { w: 256, h: T.name === 'tower' ? 176 : 128, sx: milestone || isEnd ? 3.6 : 2.8, pos: new THREE.Vector3(sp.end.x, sp.end.top + 3.9, sp.end.z), noBg: true });
   if (isEnd) addPortal(sp.end.x - 1.4, sp.end.top, sp.end.z - 1.4, 0, 0);
   T.pairsByFloor = T.pairsByFloor || new Map();
   T.pairsByFloor.set(k, pairs);

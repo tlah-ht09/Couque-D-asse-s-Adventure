@@ -144,6 +144,7 @@ function toCheckpoint() { respawnAt(P.respawn); }
 
 // ---------- 끝없는 탑 ----------
 function enterTower(floor) {
+  if (floor <= 0) reseedTower();
   P.course = null; hideTimer();
   P.trackOn = 'tower';
   P.trackFloor.tower = floor;
