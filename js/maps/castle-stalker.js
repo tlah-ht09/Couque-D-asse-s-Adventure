@@ -3,6 +3,8 @@
 //  쿠키성 내부의 괴물 (층마다 1마리, 플레이어가 있는 층의 괴물만 움직여요)
 //  - 키 2.6m, 새카만 몸에 하얀 눈과 입만 보여요
 //  - 인식: 아주 멀리서도 봐요(120m = 층 전체). 벽에는 시야가 막혀요 (격자로 판정)
+//    새로 발견하려면: 괴물 앞쪽 부채꼴(코사인 ≥ MON_COS) 안에 내가 있고 + 괴물이 내 화면 안에 보여야 해요
+//    이미 쫓는 중이면 벽만 없으면 계속 봐요 (뒤돌아 도망쳐도 바로 안 놓쳐요)
 //  - 발견하면 괴성을 지르고 쫓아와요. 다른 층으로 가면 계단을 타고 따라와요
 //  - 놓치면 마지막으로 본 위치 -> 그 방향으로 몇 칸 더 수색
 //  - 옷장(E): 문이 80% 닫혀요. 들어가는 걸 봤으면 옷장 앞까지 와서 서성이지만 문은 못 열어요
@@ -10,6 +12,8 @@
 const STK = {
   R: 120, SPEED: 9 * 1.25, WANDER: 3.2, CATCH: 1.1, SEEN_NEED: 1.5, SEEN_WIN: 2.5,
   LINGER_SEEN: 8, LINGER: 3, HOWL_CD: 8, HOWL_VOL: 0.06, SCARE_VOL: 0.22, TRACK: 1.3, BODY_R: 0.45, STEP_RANGE: 45,
+  MON_COS: 0.5,       // 괴물 시야: 정면과 내 쪽 방향의 코사인 유사도가 이 값 이상이면 보여요 (0.5 = 좌우 60°, 총 120°)
+  PLAYER_VIEW: true,  // true: 괴물이 내 화면(가로 시야각) 안에 있을 때만 새로 발견돼요
   pDist: 0, beatT: 0, vig: null,
   mons: [], time: 0, seenLog: [], seenNow: false, hide: null, kill: null, grace: 0, wasIn: false, pf: -1, hint: null, flash: null, doors: null,
 };
@@ -432,12 +436,27 @@ function stkFloorChanged(from, to) {
   }
 }
 
+// 괴물 정면 벡터와 (괴물 -> 나) 벡터의 코사인 유사도가 MON_COS 이상이면 시야 안이에요
+function stkMonFaces(m, dist) {
+  if (dist < 1e-3) return true;
+  const fx = -Math.sin(m.yaw), fz = -Math.cos(m.yaw);
+  return ((P.x - m.x) * fx + (P.z - m.z) * fz) / dist >= STK.MON_COS;
+}
+// 괴물이 내 화면 가로 시야각 안에 있나 (카메라 정면 vs 나 -> 괴물, 코사인 비교)
+function stkPlayerViews(m, dist) {
+  if (!STK.PLAYER_VIEW || dist < 1e-3) return true;
+  const half = Math.atan(Math.tan(camera.fov * Math.PI / 360) * camera.aspect);   // 가로 반시야각
+  const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw);
+  return ((m.x - P.x) * fx + (m.z - P.z) * fz) / dist >= Math.cos(half);
+}
 function stkUpdateMon(m, dt, active, pf) {
   const fl = m.fl;
   if (!active) { if (m.state !== 'wander') stkToWander(m); m.g.visible = false; return; }
   // 보이나? (아주 멀리서도 보여요. 벽에는 막혀요)
   const dist = Math.hypot(P.x - m.x, P.z - m.z);
-  const sees = !STK.hide && STK.grace <= 0 && dist < STK.R && Math.abs(P.y - m.y) < 3 && stkLOS(fl, m.x, m.z, P.x, P.z);
+  const clear = !STK.hide && STK.grace <= 0 && dist < STK.R && Math.abs(P.y - m.y) < 3 && stkLOS(fl, m.x, m.z, P.x, P.z);
+  // 이미 쫓는 중이면 벽만 없으면 계속 봐요. 새로 발견할 때만 서로 마주 보고 있어야 해요
+  const sees = clear && (m.state === 'chase' || m.state === 'hunt' || (stkMonFaces(m, dist) && stkPlayerViews(m, dist)));
   if (sees) {
     STK.seenNow = true;
     if (m.state !== 'chase' && m.state !== 'hunt') {   // 새로 발견: 괴성 + 잠깐 멈칫
