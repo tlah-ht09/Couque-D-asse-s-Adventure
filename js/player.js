@@ -268,7 +268,7 @@ function updatePlayer(h) {
   const wx = rx * ix + fx * iy, wz = rz * ix + fz * iy;
   const hasInput = !!(ix || iy) && !L;
   updateStamina(h, hasInput, L);
-  const spd = SPEED * (firstPerson() ? 1 : speedMult()) * (RUN.on ? RUN_MULT : 1);   // 성 안: 강화/펫 보너스 없이 기본 속도
+  const spd = SPEED * (firstPerson() || hellTower() ? 1 : speedMult()) * (RUN.on && !hellTower() ? RUN_MULT : 1);   // 성 안: 강화/펫 보너스 없이 기본 속도
   const onIce = P.grounded && P.ground && P.ground.ice;
   const turning = hasInput && (wx * P.vx + wz * P.vz) < 0;
   let rate;
@@ -287,7 +287,7 @@ function updatePlayer(h) {
   P.coyote = P.grounded ? 0.11 : P.coyote - h;
   P.jumpBuf -= h;
   if (P.jumpBuf > 0 && !L) {
-    const jv = JUMP * jumpMult();
+    const jv = JUMP * (hellTower() ? 1 : jumpMult());
     if (P.coyote > 0) {
       P.vy = jv; P.grounded = false; P.ground = null; P.coyote = 0; P.jumpBuf = 0; P.cut = false;
       P.airJumps = airJumpMax();
@@ -407,7 +407,7 @@ function die() {
   SFX.die();
   S.deaths++;
   cam.shake = 0.2;
-  respawnAt(P.respawn);
+  if (!towerFall()) respawnAt(P.respawn);
 }
 function respawnAt(r) {
   P.x = r.x; P.y = r.y + 0.05; P.z = r.z;

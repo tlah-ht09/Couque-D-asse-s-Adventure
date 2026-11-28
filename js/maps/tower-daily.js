@@ -12,40 +12,45 @@ const DAILY_THEME = { grass: 0xffe08a, dirt: 0xc08a4a, dirt2: 0x8a5a2b };
 function makeTrack(name, origin, seedFn, diffFn, maxFloors) {
   return { name, origin, seed: seedFn, diff: diffFn, max: maxFloors, specs: [], built: new Map(), pairs: [] };
 }
-const TT = makeTrack('tower', { x: TOWER_C.x, top: 0, z: TOWER_C.z - 18 }, (k) => hashStr('tower-' + TT.runSeed + '-' + k), (k) => Math.min(1, (k - 1) / 70), Infinity);
+const TT = makeTrack('tower', { x: TOWER_C.x, top: 0, z: TOWER_C.z - 18 }, (k) => hashStr('tower-' + TT.runSeed + '-' + k), (k) => Math.min(1, 0.35 + (k - 1) / 40), Infinity);
+// 지옥 탑: 탑 안에서는 강화·펫·달리기·더블점프 없음
+const hellTower = () => curMap === 'tower';
 TT.runSeed = (Math.random() * 1e9) | 0;
 // 새 판: 시드를 바꾸고 지어둔 층을 모두 버림 → 매번 다른 탑
 function reseedTower() {
   TT.runSeed = (Math.random() * 1e9) | 0;
   for (const b of TT.built.values()) disposeBuild(b);
   TT.built.clear(); if (TT.pairsByFloor) TT.pairsByFloor.clear();
-  TT.specs.length = 0; TT.lastLo = TT.lastHi = null;
+  TT.specs.length = 0; TT.lastLo = TT.lastHi = null; TT.cp = 0;
 }
 // 구간 템플릿 (타워오브헬식 기믹 단위). seq: 종류 이름 | '*' 아무거나 | 'A','B' 이 층에서 고정된 랜덤 종류
 // lat: rand/zig/line/arc/wave · dy: stairs/flat · sc: 발판 크기 배율 · sp: 이동 속도 배율
 const TPLS = [
-  { id: 'mix', name: '뒤죽박죽', w: 3, seq: ['*'] },
+  { id: 'mix', name: '뒤죽박죽', w: 3, easy: 1, seq: ['*'] },
   { id: 'aaa', name: '한 우물만', min: 3, w: 1.5, seq: ['A'], lat: 'arc' },
   { id: 'ab', name: '반복 리듬', min: 4, w: 2, seq: ['A', 'B'], lat: 'wave' },
-  { id: 'stairs', name: '하늘 계단', w: 1, seq: ['n'], lat: 'arc', dy: 'stairs', sc: 0.85 },
+  { id: 'stairs', name: '하늘 계단', w: 1, easy: 1, seq: ['n'], lat: 'arc', dy: 'stairs', sc: 0.85 },
   { id: 'disczig', name: '지그재그 원판', min: 2, w: 1, need: ['disc'], seq: ['disc'], lat: 'zig' },
-  { id: 'beamline', name: '외나무 다리', min: 3, w: 1, need: ['beam'], seq: ['beam'], lat: 'line', dy: 'flat' },
+  { id: 'beamline', name: '외나무 다리', min: 3, w: 1, easy: 1, need: ['beam'], seq: ['beam'], lat: 'line', dy: 'flat' },
   { id: 'movers', name: '흔들리는 길', min: 4, w: 1, need: ['ml'], seq: ['ml'], lat: 'line' },
-  { id: 'tiny', name: '바늘 발판', min: 5, w: 0.8, seq: ['n'], lat: 'zig', sc: 0.6 },
-  { id: 'fadeway', name: '사라지는 복도', min: 6, w: 1, need: ['fade'], seq: ['fade'], lat: 'line' },
+  { id: 'tiny', name: '바늘 발판', min: 5, w: 0.8, hard: 1, seq: ['n'], lat: 'zig', sc: 0.6 },
+  { id: 'fadeway', name: '사라지는 복도', min: 6, w: 1, hard: 1, need: ['fade'], seq: ['fade'], lat: 'line' },
   { id: 'tramp', name: '트램펄린 연쇄', min: 7, w: 0.8, need: ['bounce'], seq: ['bounce', 'n'] },
-  { id: 'icezig', name: '미끄럼 지그재그', min: 8, w: 1, need: ['ice'], seq: ['ice'], lat: 'zig' },
+  { id: 'icezig', name: '미끄럼 지그재그', min: 8, w: 1, hard: 1, need: ['ice'], seq: ['ice'], lat: 'zig' },
   { id: 'lavarun', name: '용암 건너기', min: 9, w: 0.8, need: ['lava'], seq: ['lava', 'n'] },
   { id: 'elev', name: '엘리베이터', min: 10, w: 0.8, need: ['my'], seq: ['my', 'n'], lat: 'wave' },
-  { id: 'spin', name: '회전 지옥', min: 12, w: 0.8, need: ['sweep'], seq: ['sweep', 'disc'] },
-  { id: 'rush', name: '고속 셔틀', min: 15, w: 0.7, need: ['mf', 'ml'], seq: ['mf', 'ml'], sp: 1.25 },
+  { id: 'spin', name: '회전 지옥', min: 12, w: 0.8, hard: 1, need: ['sweep'], seq: ['sweep', 'disc'] },
+  { id: 'needle', name: '바늘 외나무', min: 20, w: 0.8, hard: 1, need: ['beam'], seq: ['beam', 'n'], lat: 'zig', sc: 0.7 },
+  { id: 'chaos', name: '혼돈의 계단', min: 25, w: 0.8, hard: 1, seq: ['A', 'B', '*'], lat: 'zig', dy: 'stairs', sc: 0.8, sp: 1.2 },
+  { id: 'rush', name: '고속 셔틀', min: 15, w: 0.7, hard: 1, need: ['mf', 'ml'], seq: ['mf', 'ml'], sp: 1.25 },
 ];
-function pickTpl(rng, kEff, avail, prevId) {
+function pickTpl(rng, kEff, avail, prevId, h) {
   const ok = TPLS.filter((t) => kEff >= (t.min || 0) && (t.need || []).every((n) => avail.includes(n)));
-  const tw = ok.reduce((a, t) => a + t.w, 0);
+  const W = (t) => t.w * (t.hard ? 1 + 3 * h : t.easy ? 1 - 0.8 * h : 1);
+  const tw = ok.reduce((a, t) => a + W(t), 0);
   for (let tries = 0; ; tries++) {
     let r = rng() * tw, pick = ok[0];
-    for (const t of ok) { if ((r -= t.w) <= 0) { pick = t; break; } }
+    for (const t of ok) { if ((r -= W(t)) <= 0) { pick = t; break; } }
     if (pick.id !== prevId || tries >= 2) return pick;
   }
 }
@@ -66,7 +71,13 @@ function genFloor(T, k) {
   const R = (a, b) => a + rng() * (b - a);
   const d = T.diff(k);
   const kEff = T.name === 'daily' ? Math.round(5 + 18 * d) : k;
-  const gmin = lerp(1.5, 2.3, d), gmax = lerp(2.6, 3.5, d);
+  // 지옥도 h: 탑 전용, 1층부터 바로 오르고 120층에서 최대 (오늘의 도전은 0)
+  const h = T.name === 'tower' ? clamp(0.25 + (k - 1) / 120, 0, 1) : 0;
+  const gmin = lerp(lerp(1.5, 2.3, d), 3.3, h), gmax = lerp(lerp(2.6, 3.5, d), 4.7, h);
+  const SPD = 9, JV = 12, GV = 32;
+  const reachAt = (dy) => { const q = JV * JV - 2 * GV * dy; if (q < 0 || dy > JV * JV / (2 * GV) * 0.9) return 0; return SPD * ((JV + Math.sqrt(q)) / GV) * 0.85 + 0.3; };
+  const margin = lerp(1.2, 0.35, h);
+  const maxDy = (g) => { let lo = -4, hi = 2.0; for (let i = 0; i < 24; i++) { const m = (lo + hi) / 2; if (reachAt(m) >= g + 0.25 + margin) lo = m; else hi = m; } return lo; };
   const SPAN = TRACK_SIDE - 2 * CORNER_H;
   const table = [['n', 3]];
   if (kEff >= 2) table.push(['disc', 2]);
@@ -100,7 +111,7 @@ function genFloor(T, k) {
   };
   // 0) 구간 템플릿
   const avail = table.map((t) => t[0]);
-  const tpl = pickTpl(rng, kEff, avail, k > 1 ? T.specs[k - 2].tpl : null);
+  const tpl = pickTpl(rng, kEff, avail, k > 1 ? T.specs[k - 2].tpl : null, h);
   const mir = rng() < 0.5 ? -1 : 1;
   const mkItem = (kind) => {
     const it = mkItem0(kind);
@@ -109,6 +120,16 @@ function genFloor(T, k) {
       if (it.r) { it.r = it.w / 2; it.dd = it.w; }
     }
     if (tpl.sp) { if (it.move) it.move.spd *= tpl.sp; if (it.spd) it.spd *= tpl.sp; }
+    if (h > 0) {
+      const s = 1 - 0.38 * h;
+      if (kind === 'beam') it.w = Math.max(0.7, it.w * s);
+      else if (!['bounce', 'lava', 'sweep'].includes(kind)) {
+        it.w = Math.max(0.9, it.w * s); it.dd = Math.max(0.9, it.dd * s);
+        if (it.r) { it.r = it.w / 2; it.dd = it.w; }
+      }
+      if (it.move) it.move.spd *= 1 + 0.8 * h;
+      if (it.spd) it.spd *= 1 + 0.7 * h;
+    }
     return it;
   };
   const slot = {};
@@ -172,7 +193,8 @@ function genFloor(T, k) {
   // 3) 위치/높이
   let F = CORNER_H, L = 0, top = prev.top, prevW = 5, prevKind = 'corner';
   const out = [];
-  const latS = lerp(1, 2.6, d);
+  const latS = lerp(lerp(1, 2.6, d), 3.2, h);
+  const capDy = gaps.map((g) => maxDy(g));
   let rise = 0;
   items.forEach((it, j) => {
     F += gaps[j];
@@ -192,26 +214,29 @@ function genFloor(T, k) {
     const lim = (prevW + it.w) / 2 + 0.2;
     nl = clamp(nl, L - lim, L + lim);
     if (j === items.length - 1) nl = clamp(nl, -(2.5 + it.w / 2 + 0.2), 2.5 + it.w / 2 + 0.2);
-    let dy = R(-0.5, lerp(1.0, 1.4, d));
+    let dy = R(-0.5, lerp(lerp(1.0, 1.4, d), 1.9, h));
     if (tpl.dy === 'stairs') dy = R(0.8, lerp(1.0, 1.4, d));
     else if (tpl.dy === 'flat') dy = R(-0.3, 0.3);
     if (prevKind === 'bounce') dy = R(3, 4.5);
     else if (it.kind === 'my' || prevKind === 'my') dy = R(-0.2, 0.4);
     else if (it.kind === 'sweep' || it.kind === 'lava') dy = Math.min(dy, 0.6);
+    if (prevKind !== 'bounce') dy = Math.min(dy, capDy[j]);
     top += dy; rise += dy;
     out.push(Object.assign({}, it, { F: cF, L: nl, top, dy }));
     L = nl; prevW = it.w; prevKind = it.kind;
   });
   let dyEnd = prevKind === 'bounce' ? R(3, 4) : prevKind === 'my' ? R(-0.2, 0.4) : R(0, 1);
+  const capE = capDy[items.length];
+  if (prevKind !== 'bounce') dyEnd = Math.min(dyEnd, capE);
   if (rise + dyEnd < 3 && prevKind !== 'my' && prevKind !== 'bounce') {
     let need = 3 - (rise + dyEnd);
-    const add = Math.min(need, 1.3 - dyEnd); dyEnd += add; need -= add;
+    const add = Math.max(0, Math.min(need, Math.min(1.3, capE) - dyEnd)); dyEnd += add; need -= add;
     if (need > 0) {
       // 앞 아이템들 높이를 조금씩 올림 (이후 전체가 같이 올라감)
       for (let j = 0; j < out.length && need > 0; j++) {
         const o = out[j], pk = j ? out[j - 1].kind : 'corner';
         if (o.kind === 'my' || pk === 'my' || pk === 'bounce' || o.kind === 'sweep' || o.kind === 'lava') continue;
-        const room = Math.max(0, 1.3 - o.dy);
+        const room = Math.max(0, Math.min(1.3, capDy[j]) - o.dy);
         const a = Math.min(room, need);
         if (a <= 0) continue;
         o.dy += a; need -= a;
@@ -276,19 +301,22 @@ function buildFloor(T, k) {
   // 끝 모서리 (체크포인트 / 결승)
   const isEnd = T.max !== Infinity && k === T.max;
   const milestone = T.name === 'tower' && k % 10 === 0;
-  const cm = isEnd ? M.finish : milestone ? M.gold : M.cp;
+  const plain = T.name === 'tower' && !milestone; // 지옥 탑: 체크포인트는 10층마다만
+  const cm = isEnd ? M.finish : milestone ? M.gold : plain ? M.start : M.cp;
   const corner = boxPlat(sp.end.x, sp.end.top, sp.end.z, 5, 1, 5, cm, {});
   corner.track = T; corner.tfloor = k; corner.tcorner = k;
   if (isEnd) corner.trackFinish = true;
   pairs.push([last, corner]);
-  // 깃발
-  const px = sp.end.x + 2.1, pz = sp.end.z + 2.1;
-  mesh(G.cyl8, M.pole, px, sp.end.top + 1.4, pz, 0.08, 2.8, 0.08);
-  const fm = new THREE.MeshStandardMaterial({ color: 0x8892b0, flatShading: true, side: THREE.DoubleSide });
-  fm.userData.own = true;
-  corner.flag = mesh(G.box, fm, px + 0.55, sp.end.top + 2.45, pz, 1.1, 0.7, 0.06);
+  // 깃발 (체크포인트에만)
+  if (!plain) {
+    const px = sp.end.x + 2.1, pz = sp.end.z + 2.1;
+    mesh(G.cyl8, M.pole, px, sp.end.top + 1.4, pz, 0.08, 2.8, 0.08);
+    const fm = new THREE.MeshStandardMaterial({ color: 0x8892b0, flatShading: true, side: THREE.DoubleSide });
+    fm.userData.own = true;
+    corner.flag = mesh(G.box, fm, px + 0.55, sp.end.top + 2.45, pz, 1.1, 0.7, 0.06);
+  }
   const lines = T.name === 'tower'
-    ? (milestone ? [{ t: k + '층', c: '#ffcf3f', s: 64 }, { t: '보석 +' + (10 + k / 10), c: '#7af0ff', s: 34 }] : [{ t: k + '층', c: '#ffffff', s: 60 }]).concat([{ t: '▶ ' + trackSpec(T, k + 1).tplName, c: '#c3a6ff', s: 30 }])
+    ? (milestone ? [{ t: k + '층 체크포인트', c: '#ffcf3f', s: 40 }, { t: '보석 +' + (10 + k / 10), c: '#7af0ff', s: 34 }] : [{ t: k + '층', c: '#ffffff', s: 60 }]).concat([{ t: '▶ ' + trackSpec(T, k + 1).tplName, c: '#c3a6ff', s: 30 }])
     : (isEnd ? [{ t: '결승', c: '#ffcf3f', s: 60 }] : [{ t: k + ' / ' + T.max + ' 구간', c: '#ffffff', s: 50 }]);
   makeLabel(lines, { w: 256, h: T.name === 'tower' ? 176 : 128, sx: milestone || isEnd ? 3.6 : 2.8, pos: new THREE.Vector3(sp.end.x, sp.end.top + 3.9, sp.end.z), noBg: true });
   if (isEnd) addPortal(sp.end.x - 1.4, sp.end.top, sp.end.z - 1.4, 0, 0);

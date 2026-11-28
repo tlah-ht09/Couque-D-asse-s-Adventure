@@ -291,7 +291,7 @@ function fmtPct(x) { return stripZ((x * 100).toFixed(x < 0.1 ? 1 : 0)) + '%'; }
 function petStatTxt(p, v) { return Object.keys(p.st).map((k) => PSTAT[k].name + ' +' + fmtPct(petStatVal(p, k, v))).join(' · '); }
 
 // ---------- 아우라 능력 ----------
-function airJumpMax() { return S.up.dbl + (PS.aura.whale ? 1 : 0); }
+function airJumpMax() { return hellTower() ? 0 : S.up.dbl + (PS.aura.whale ? 1 : 0); }
 function phoenixBlast(w) {
   const R = 4.5, hits = [];
   for (const e of aliveEnemies()) {

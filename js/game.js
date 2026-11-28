@@ -140,11 +140,14 @@ function goHome(fx) {
   if (fx) SFX.cp();
   respawnAt(SPAWN);
 }
-function toCheckpoint() { respawnAt(P.respawn); }
+// 지옥 탑: 체크포인트는 10층마다. 떨어지면 마지막 10층으로
+function towerFall() { if (P.trackOn === 'tower' && hellTower()) { enterTower(TT.cp || 0, true); return true; } return false; }
+function toCheckpoint() { if (!towerFall()) respawnAt(P.respawn); }
 
 // ---------- 끝없는 탑 ----------
-function enterTower(floor) {
-  if (floor <= 0) reseedTower();
+function enterTower(floor, keep) {
+  if (floor <= 0 && !keep) reseedTower();
+  TT.cp = Math.max(0, floor);
   P.course = null; hideTimer();
   P.trackOn = 'tower';
   P.trackFloor.tower = floor;
@@ -178,6 +181,7 @@ function trackCorner(T, c) {
   P.cpCol = c;
   if (c.flag) { c.flag.material.color.set(0x3ee6a5); c.flag.material.emissive.set(0x1a8a5f); }
   if (T.name === 'tower') {
+    if (k % 10 === 0 && k > (TT.cp || 0)) TT.cp = k;
     towerWindow(false);
     if (k > S.tower.best) {
       S.tower.best = k;
@@ -190,7 +194,7 @@ function trackCorner(T, c) {
       else toast(k + '층 · +' + fmt(coins) + ' 코인 · 보석 +' + g, 'good', 1800);
       submitTime();
       afterProgress();
-    } else if (fresh && k > 0) { SFX.cp(); toast(k + '층 체크포인트', '', 1200); }
+    } else if (fresh && k > 0 && k % 10 === 0) { SFX.cp(); toast(k + '층 체크포인트', 'good', 1200); }
   } else if (fresh && k > 0 && !c.trackFinish) { SFX.cp(); toast(k + '구간 체크포인트', 'good', 1200); }
 }
 

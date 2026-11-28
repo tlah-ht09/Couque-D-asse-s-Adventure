@@ -387,6 +387,7 @@ function hideModal() { $('modal').classList.add('hidden'); modalOpen = false; ca
 // ---------- 미니맵 ----------
 const mm = $('minimap'), mctx = mm.getContext('2d');
 function drawMinimap() {
+  if (typeof drawCastleInMinimap === 'function' && inCastleIn(P.x, P.y, P.z)) { drawCastleInMinimap(mctx, mm.width, mm.height); return; }   // 성 안: 층 지도 + 옷장
   const W = mm.width, Hh = mm.height, cx = W / 2, cy = Hh / 2;
   const s = (W / 2) / 95;
   const c = mctx;

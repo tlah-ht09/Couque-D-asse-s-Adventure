@@ -413,3 +413,136 @@ function exitCastleInterior() {
   respawnAt(r);
   SFX.cp();
 }
+
+// ===================== 성 안 미니맵 (ui.js drawMinimap 이 성 안에서 이걸 불러요) =====================
+//  - 지금 층만: 바닥·큰 방·벽·올라가는 계단(▲)·내려가는 구멍(▼)·출구 발판·옷장
+//  - 층마다 정적인 그림은 오프스크린 캔버스에 한 번만 그려 두고, 플레이어 중심으로 잘라 붙여요
+const CI_MM_R = 42;            // 미니맵 반지름(m)
+const CI_MM_PAD = 4;           // 오프스크린 여백(m)
+const ciMMCache = [];
+const ciHex = (n, k) => { const c = new THREE.Color(n); if (k != null) c.multiplyScalar(k); return '#' + c.getHexString(); };
+function ciMMBuild(f, s) {
+  const fl = CASTLE_IN.floors[f];
+  const span = CI_N * CI_CELL + CI_MM_PAD * 2;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = Math.ceil(span * s);
+  const c = cv.getContext('2d');
+  const X = (x) => (x - ciX0 + CI_MM_PAD) * s, Z = (z) => (z - ciZ0 + CI_MM_PAD) * s;
+  const cs = CI_CELL * s;
+  // 바닥
+  c.fillStyle = ciHex(fl.wallColor, 0.32);
+  c.fillRect(X(ciX0), Z(ciZ0), CI_N * cs, CI_N * cs);
+  // 큰 방
+  for (const h of fl.halls) {
+    c.fillStyle = h.throne ? 'rgba(255,205,80,0.28)' : 'rgba(255,255,255,0.09)';
+    c.fillRect(X(h.x0), Z(h.z0), h.w * cs, h.h * cs);
+  }
+  // 계단 한 줄 그리기 (st: stair 데이터, up: 올라가는 계단이면 true)
+  const drawStair = (st, up) => {
+    const [dx, dz] = st.dir, len = st.stepDepth * st.steps, wd = st.width;
+    const ax = st.start.x, az = st.start.z, bx = ax + dx * len, bz = az + dz * len;
+    const x0 = Math.min(ax, bx) - (dx ? 0 : wd / 2), z0 = Math.min(az, bz) - (dz ? 0 : wd / 2);
+    const w = dx ? len : wd, h = dz ? len : wd;
+    c.fillStyle = up ? '#d9b27a' : 'rgba(10,8,20,0.85)';
+    c.fillRect(X(x0), Z(z0), w * s, h * s);
+    c.strokeStyle = up ? 'rgba(90,55,20,0.75)' : 'rgba(170,200,255,0.35)';
+    c.lineWidth = Math.max(1, s * 0.12);
+    c.beginPath();
+    for (let k = 1; k < st.steps; k++) {
+      const px = ax + dx * st.stepDepth * k, pz = az + dz * st.stepDepth * k;
+      if (dx) { c.moveTo(X(px), Z(z0)); c.lineTo(X(px), Z(z0 + h)); } else { c.moveTo(X(x0), Z(pz)); c.lineTo(X(x0 + w), Z(pz)); }
+    }
+    c.stroke();
+    // 화살표: 올라감 = 계단 방향, 내려감 = 반대 방향
+    const mx = (ax + bx) / 2, mz = (az + bz) / 2, sg = up ? 1 : -1, ux = dx * sg, uz = dz * sg;
+    const L = Math.min(len * 0.3, 6) * s, Wd = wd * 0.32 * s, cx = X(mx), cz = Z(mz);
+    c.fillStyle = up ? '#fff6d8' : '#9fc4ff';
+    c.strokeStyle = 'rgba(20,14,30,0.9)'; c.lineWidth = Math.max(2, s * 0.5);
+    c.beginPath();
+    c.moveTo(cx + ux * L, cz + uz * L);
+    c.lineTo(cx - ux * L * 0.4 - uz * Wd, cz - uz * L * 0.4 + ux * Wd);
+    c.lineTo(cx - ux * L * 0.4 + uz * Wd, cz - uz * L * 0.4 - ux * Wd);
+    c.closePath(); c.stroke(); c.fill();
+  };
+  if (f > 0 && CASTLE_IN.floors[f - 1].stair) drawStair(CASTLE_IN.floors[f - 1].stair, false);
+  if (fl.stair) drawStair(fl.stair, true);
+  // 벽
+  c.fillStyle = ciHex(fl.wallColor);
+  for (const w of fl.walls) {
+    const t = Math.max(w.thick, 2.6 / s);   // 너무 얇으면 안 보여서 최소 두께
+    const sx = w.axis === 'x' ? w.len : t, sz = w.axis === 'x' ? t : w.len;
+    c.fillRect(X(w.cx - sx / 2), Z(w.cz - sz / 2), sx * s, sz * s);
+  }
+  // 1층 출구 발판
+  if (f === 0 && CASTLE_IN.exitPad) {
+    const e = CASTLE_IN.exitPad;
+    c.fillStyle = '#5ef2c0'; c.strokeStyle = '#ffffff'; c.lineWidth = Math.max(2, s * 0.4);
+    c.beginPath(); c.arc(X(e.x), Z(e.z), Math.max(6, 1.1 * s), 0, TAU); c.fill(); c.stroke();
+  }
+  return { cv, s };
+}
+function ciMMWardrobe(c, x, y, w, s, hidden, pulse) {
+  const bw = Math.max(24, w.w * s * 1.6), bd = Math.max(17, w.d * s * 1.6);
+  c.save();
+  c.translate(x, y);
+  c.rotate(Math.atan2(w.fx, -w.fz));   // 앞(열린 쪽)이 화면 위(-y)가 되게 돌린 뒤 그려요
+  if (hidden || pulse > 0) {
+    c.fillStyle = hidden ? 'rgba(120,255,170,0.35)' : 'rgba(255,214,120,' + (0.25 * pulse).toFixed(3) + ')';
+    c.beginPath(); c.arc(0, 0, bw * 0.95, 0, TAU); c.fill();
+  }
+  c.fillStyle = hidden ? '#7be0a0' : '#b8763a';
+  c.strokeStyle = '#2a170a'; c.lineWidth = 3;
+  c.beginPath(); c.rect(-bw / 2, -bd / 2, bw, bd); c.fill(); c.stroke();
+  // 문짝 두 개 + 손잡이 (앞쪽 = -y)
+  c.strokeStyle = '#ffe2b0'; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(-bw / 2 + 3, -bd / 2 + 2); c.lineTo(bw / 2 - 3, -bd / 2 + 2); c.moveTo(0, -bd / 2 + 1); c.lineTo(0, bd / 2 - 1); c.stroke();
+  c.fillStyle = '#ffe2b0';
+  c.fillRect(-4.5, -1.5, 2.5, 3); c.fillRect(2, -1.5, 2.5, 3);
+  c.restore();
+}
+function drawCastleInMinimap(c, W, Hh) {
+  const cx = W / 2, cy = Hh / 2, s = (W / 2) / CI_MM_R;
+  const f = CASTLE_IN.playerFloor(), fl = CASTLE_IN.floors[f];
+  if (!ciMMCache[f] || ciMMCache[f].s !== s) ciMMCache[f] = ciMMBuild(f, s);
+  const mm = ciMMCache[f];
+  c.clearRect(0, 0, W, Hh);
+  c.save();
+  c.beginPath(); c.arc(cx, cy, W / 2, 0, TAU); c.clip();
+  c.fillStyle = 'rgba(14,10,24,0.94)'; c.fillRect(0, 0, W, Hh);
+  const ox = cx - (P.x - ciX0 + CI_MM_PAD) * s, oz = cy - (P.z - ciZ0 + CI_MM_PAD) * s;
+  c.drawImage(mm.cv, ox, oz);
+  // 옷장 (밖에 있으면 테두리에 작은 점으로 방향만)
+  const tx = (x) => cx + (x - P.x) * s, tz = (z) => cy + (z - P.z) * s;
+  const hide = typeof STK !== 'undefined' ? STK.hide : null;
+  const now = performance.now() / 1000, R = W / 2 - 14;
+  for (const w of fl.wardrobes) {
+    let x = tx(w.x), y = tz(w.z);
+    const dd = Math.hypot(x - cx, y - cy);
+    if (dd > R) {
+      x = cx + (x - cx) / dd * R; y = cy + (y - cy) / dd * R;
+      c.fillStyle = 'rgba(232,160,90,0.85)'; c.strokeStyle = '#2a170a'; c.lineWidth = 2;
+      c.beginPath(); c.arc(x, y, 7.5, 0, TAU); c.fill(); c.stroke();
+      continue;
+    }
+    const isHid = !!hide && hide.floor === w.floor && hide.doorIdx === w.doorIdx;
+    const near = Math.hypot(P.x - w.x, P.z - w.z) < 4;
+    ciMMWardrobe(c, x, y, w, s, isHid, near ? 0.6 + 0.4 * Math.sin(now * 6) : 0);
+  }
+  // 시야 부채꼴 + 플레이어 화살표 (1인칭이라 둘 다 cam.yaw 기준)
+  c.translate(cx, cy);
+  c.rotate(-cam.yaw);
+  c.fillStyle = 'rgba(255,255,255,0.16)';
+  c.beginPath(); c.moveTo(0, 0); c.arc(0, 0, 56, -Math.PI / 2 - 0.55, -Math.PI / 2 + 0.55); c.closePath(); c.fill();
+  c.fillStyle = '#ffffff'; c.strokeStyle = '#1a1f3a'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(0, -13); c.lineTo(9, 9); c.lineTo(0, 4.5); c.lineTo(-9, 9); c.closePath(); c.fill(); c.stroke();
+  c.restore();
+  // 북쪽 표시 + 층 이름
+  c.fillStyle = '#ffffff'; c.font = '26px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText('N', cx, 22);
+  const label = (f + 1) + 'F ' + fl.theme;
+  c.font = '27px ' + FONT;
+  const tw = c.measureText(label).width + 24, ly = Hh - 42;
+  c.fillStyle = 'rgba(10,8,20,0.78)';
+  c.beginPath(); if (c.roundRect) c.roundRect(cx - tw / 2, ly - 18, tw, 36, 18); else c.rect(cx - tw / 2, ly - 18, tw, 36); c.fill();
+  c.fillStyle = '#ffe6b8'; c.fillText(label, cx, ly + 1);
+}
